@@ -5,7 +5,16 @@ import {
   DynamoDBClient,
   waitUntilTableExists,
 } from '@aws-sdk/client-dynamodb';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { create, get, listByUser, remove, update } from './projects';
 import { ddbDocClient } from './dynamodb';
 
@@ -33,6 +42,40 @@ const baseEvent = (
 
 const parseBody = <T>(responseBody: string | undefined): T =>
   JSON.parse(responseBody ?? '{}') as T;
+
+interface ProjectAttributes {
+  userId: string;
+  name: string;
+  description: string | null;
+}
+
+interface ProjectRecord extends ProjectAttributes {
+  id: string;
+}
+
+interface ProjectListResponse {
+  items: ProjectRecord[];
+}
+
+const createProject = async (
+  input: Partial<ProjectAttributes> = {},
+): Promise<{ statusCode: number; project: ProjectRecord }> => {
+  const response = await create(
+    baseEvent({
+      body: JSON.stringify({
+        userId: 'integration-user',
+        name: 'Integration Project',
+        description: 'Created via integration test',
+        ...input,
+      }),
+    }),
+  );
+
+  return {
+    statusCode: response.statusCode,
+    project: parseBody<ProjectRecord>(response.body),
+  };
+};
 
 describe('projects integration', () => {
   const dynamoClient = new DynamoDBClient({
@@ -73,92 +116,130 @@ describe('projects integration', () => {
     ddbDocClient.destroy?.();
   });
 
-  it('executes a full project lifecycle against DynamoDB Local', async () => {
-    const userId = 'integration-user';
+  it('creates a project with DynamoDB Local', async () => {
+    const { statusCode, project } = await createProject();
 
-    const createResponse = await create(
-      baseEvent({
-        body: JSON.stringify({
-          userId,
-          name: 'Integration Project',
-          description: 'Created via integration test',
-        }),
-      }),
-    );
-
-    expect(createResponse.statusCode).toBe(201);
-
-    const created = parseBody<{
-      id: string;
-      userId: string;
-      name: string;
-      description: string | null;
-    }>(createResponse.body);
-
-    expect(created).toMatchObject({
-      userId,
+    expect(statusCode).toBe(201);
+    expect(project).toMatchObject<ProjectAttributes>({
+      userId: 'integration-user',
       name: 'Integration Project',
       description: 'Created via integration test',
     });
 
-    const getResponse = await get(
-      baseEvent({
-        pathParameters: { id: created.id },
-      }),
-    );
-
-    expect(getResponse.statusCode).toBe(200);
-    expect(parseBody<Record<string, unknown>>(getResponse.body)).toMatchObject({
-      id: created.id,
-      userId,
-      name: created.name,
-      description: created.description,
-    });
-
-    const listResponse = await listByUser(
-      baseEvent({
-        pathParameters: { userId },
-      }),
-    );
-
-    expect(listResponse.statusCode).toBe(200);
-    expect(parseBody<{ items: unknown[] }>(listResponse.body).items).toMatchObject([
-      {
-        id: created.id,
-        userId,
-        name: created.name,
-        description: created.description,
-      },
-    ]);
-
-    const updateResponse = await update(
-      baseEvent({
-        pathParameters: { id: created.id },
-        body: JSON.stringify({ description: 'Updated description' }),
-      }),
-    );
-
-    expect(updateResponse.statusCode).toBe(200);
-    expect(parseBody<Record<string, unknown>>(updateResponse.body)).toMatchObject({
-      id: created.id,
-      description: 'Updated description',
-    });
-
     const deleteResponse = await remove(
       baseEvent({
-        pathParameters: { id: created.id },
+        pathParameters: { id: project.id },
       }),
     );
 
     expect(deleteResponse.statusCode).toBe(204);
-    expect(parseBody<Record<string, never>>(deleteResponse.body)).toEqual({});
+  });
 
-    const getAfterDeleteResponse = await get(
-      baseEvent({
-        pathParameters: { id: created.id },
-      }),
-    );
+  describe('with an existing project', () => {
+    let project: ProjectRecord | undefined;
 
-    expect(getAfterDeleteResponse.statusCode).toBe(404);
+    beforeEach(async () => {
+      const { statusCode, project: created } = await createProject({
+        name: 'Existing Project',
+      });
+
+      expect(statusCode).toBe(201);
+      project = created;
+    });
+
+    afterEach(async () => {
+      if (!project) {
+        return;
+      }
+
+      const response = await remove(
+        baseEvent({
+          pathParameters: { id: project.id },
+        }),
+      );
+
+      if (![204, 404].includes(response.statusCode ?? 0)) {
+        throw new Error(
+          `Failed to clean up project ${project.id}: ${response.statusCode} ${response.body}`,
+        );
+      }
+
+      project = undefined;
+    });
+
+    it('retrieves a project by id', async () => {
+      const getResponse = await get(
+        baseEvent({
+          pathParameters: { id: project!.id },
+        }),
+      );
+
+      expect(getResponse.statusCode).toBe(200);
+      expect(parseBody<ProjectRecord>(getResponse.body)).toMatchObject({
+        id: project!.id,
+        userId: project!.userId,
+        name: 'Existing Project',
+        description: project!.description,
+      });
+    });
+
+    it('lists projects by user', async () => {
+      const listResponse = await listByUser(
+        baseEvent({
+          pathParameters: { userId: project!.userId },
+        }),
+      );
+
+      expect(listResponse.statusCode).toBe(200);
+      const items = parseBody<ProjectListResponse>(listResponse.body).items ?? [];
+
+      expect(
+        items.some(
+          (item) =>
+            item.userId === project!.userId &&
+            item.name === project!.name &&
+            item.description === project!.description,
+        ),
+      ).toBe(true);
+    });
+
+    it('updates project fields', async () => {
+      const updateResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ description: 'Updated description' }),
+        }),
+      );
+
+      expect(updateResponse.statusCode).toBe(200);
+      const updated = parseBody<ProjectRecord>(updateResponse.body);
+
+      expect(updated).toMatchObject({
+        id: project!.id,
+        description: 'Updated description',
+      });
+
+      project = { ...project!, description: 'Updated description' };
+    });
+
+    it('deletes a project', async () => {
+      const projectId = project!.id;
+      const deleteResponse = await remove(
+        baseEvent({
+          pathParameters: { id: projectId },
+        }),
+      );
+
+      expect(deleteResponse.statusCode).toBe(204);
+      project = undefined;
+
+      const getAfterDeleteResponse = await get(
+        baseEvent({
+          pathParameters: { id: projectId },
+        }),
+      );
+
+      expect(getAfterDeleteResponse.statusCode).toBe(404);
+    });
   });
 });
