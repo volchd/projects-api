@@ -1,0 +1,105 @@
+service: projects-api
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  environment:
+    TABLE_NAME: ${self:service}-${sls:stage}-Projects
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:UpdateItem
+          Resource:
+            - arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.TABLE_NAME}
+            - arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.TABLE_NAME}/index/*
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3002
+  # When running offline, set this env var so the code points to local DynamoDB endpoint
+  project:
+    dynamodbEndpoint: http://localhost:8000
+
+package:
+  patterns:
+    - "!node_modules/**"
+    - "src/**"
+
+functions:
+  createProject:
+    handler: src/projects.create
+    events:
+      - httpApi:
+          method: POST
+          path: /projects
+          cors: true
+
+  getProject:
+    handler: src/projects.get
+    events:
+      - httpApi:
+          method: GET
+          path: /projects/{id}
+          cors: true
+
+  listProjectsByUser:
+    handler: src/projects.listByUser
+    events:
+      - httpApi:
+          method: GET
+          path: /users/{userId}/projects
+          cors: true
+
+  updateProject:
+    handler: src/projects.update
+    events:
+      - httpApi:
+          method: PUT
+          path: /projects/{id}
+          cors: true
+
+  deleteProject:
+    handler: src/projects.remove
+    events:
+      - httpApi:
+          method: DELETE
+          path: /projects/{id}
+          cors: true
+
+resources:
+  Resources:
+    ProjectsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL

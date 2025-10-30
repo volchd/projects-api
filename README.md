@@ -1,0 +1,84 @@
+# Projects API (Serverless + Node.js + DynamoDB Local via Docker)
+
+A minimal CRUD API for a `Project` object:
+```json
+{
+  "id": "uuid",
+  "userId": "user-123",
+  "name": "My Project",
+  "description": "optional"
+}
+```
+
+## Prereqs
+- Node.js 18+ (Node 20 recommended)
+- Docker
+
+## Quick Start (Local)
+1) Start DynamoDB Local:
+```bash
+npm run docker:up
+```
+This launches DynamoDB Local at `http://localhost:8000`.
+
+2) Install deps and start API locally with serverless-offline:
+```bash
+npm install
+npm run dev
+```
+API base URL will be `http://localhost:3000`.
+
+> Note about versions: this project pins **serverless v4** with **serverless-offline v14** to avoid the common peer dependency error you may have seen when using serverless v3.
+
+3) Create the DynamoDB table (automatically created on real deploy). For local dev with offline, run a no-op deploy once or use AWS CLI. An easy path is to actually `serverless deploy` to AWS (will create the table) and continue developing offline. Alternatively, you can create the table against local DynamoDB using AWS CLI:
+```bash
+aws dynamodb create-table   --table-name projects-api-dev-Projects   --attribute-definitions AttributeName=id,AttributeType=S AttributeName=userId,AttributeType=S   --key-schema AttributeName=id,KeyType=HASH   --billing-mode PAY_PER_REQUEST   --global-secondary-indexes 'IndexName=UserIndex,KeySchema=[{AttributeName=userId,KeyType=HASH}],Projection={ProjectionType=ALL}'   --endpoint-url http://localhost:8000   --region us-east-1
+```
+(Replace table name/region if you changed them in `serverless.yml`.)
+
+## Endpoints
+- `POST   /projects` — create a project
+- `GET    /projects/{id}` — get a project by id
+- `GET    /users/{userId}/projects` — list projects by userId (via GSI)
+- `PUT    /projects/{id}` — update name/description
+- `DELETE /projects/{id}` — delete by id
+
+## Example Requests
+Create:
+```bash
+curl -s -X POST http://localhost:3000/projects   -H 'Content-Type: application/json'   -d '{"userId":"u1","name":"alpha","description":"first"}'
+```
+
+Get:
+```bash
+curl -s http://localhost:3000/projects/<id>
+```
+
+List by user:
+```bash
+curl -s http://localhost:3000/users/u1/projects
+```
+
+Update:
+```bash
+curl -s -X PUT http://localhost:3000/projects/<id>   -H 'Content-Type: application/json'   -d '{"name":"alpha v2","description":"updated"}'
+```
+
+Delete:
+```bash
+curl -i -X DELETE http://localhost:3000/projects/<id>
+```
+
+## Deploy to AWS (optional)
+```bash
+npm run deploy
+```
+This creates the DynamoDB table and API Gateway/Lambda infrastructure. To tear down:
+```bash
+npm run remove
+```
+
+## Notes
+- The code auto-detects `serverless-offline` via `IS_OFFLINE` and points to `http://localhost:8000` for DynamoDB Local.
+- For real AWS deploys, no special config is needed—the SDK will use the default AWS credentials/region.
+- The table uses PAY_PER_REQUEST billing and includes a `UserIndex` GSI to list projects by `userId`.

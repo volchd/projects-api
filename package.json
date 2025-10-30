@@ -1,0 +1,27 @@
+{
+  "name": "@example/serverless-projects-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CRUD Projects API on Serverless (Node.js), DynamoDB Local via Docker",
+  "main": "src/projects.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "serverless offline start",
+    "start": "serverless offline start",
+    "deploy": "serverless deploy",
+    "remove": "serverless remove",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down -v"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.654.0",
+    "@aws-sdk/lib-dynamodb": "^3.654.0"
+  },
+  "devDependencies": {
+    "serverless": "^4.4.11",
+    "serverless-offline": "^14.4.0"
+  }
+}
