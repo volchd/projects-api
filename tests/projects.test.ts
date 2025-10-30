@@ -6,7 +6,7 @@ vi.hoisted(() => {
   process.env.TABLE_NAME = 'ProjectsTable';
 });
 
-vi.mock('./dynamodb', () => {
+vi.mock('../src/dynamodb', () => {
   return {
     ddbDocClient: {
       send: vi.fn(),
@@ -18,8 +18,8 @@ vi.mock('node:crypto', () => ({
   randomUUID: vi.fn(() => 'test-uuid'),
 }));
 
-import { create, get, listByUser, update, remove } from './projects';
-import { ddbDocClient } from './dynamodb';
+import { create, get, listByUser, update, remove } from '../src/projects';
+import { ddbDocClient } from '../src/dynamodb';
 import { randomUUID } from 'node:crypto';
 
 type MockSend = ReturnType<typeof vi.fn>;

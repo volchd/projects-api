@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { json } from './response';
+import { json } from '../src/response';
 
 describe('json', () => {
   it('returns a structured API Gateway response', () => {

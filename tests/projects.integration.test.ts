@@ -16,9 +16,9 @@ import {
   it,
   vi,
 } from 'vitest';
-import { create, get, listByUser, remove, update } from './projects';
-import { resolveUserId } from './auth';
-import { ddbDocClient } from './dynamodb';
+import { create, get, listByUser, remove, update } from '../src/projects';
+import { resolveUserId } from '../src/auth';
+import { ddbDocClient } from '../src/dynamodb';
 
 vi.hoisted(() => {
   process.env.IS_OFFLINE = 'true';
