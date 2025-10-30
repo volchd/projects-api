@@ -24,6 +24,15 @@ provider:
             - arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.TABLE_NAME}
             - arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.TABLE_NAME}/index/*
 
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node20
+    platform: node
+    tsconfig: ./tsconfig.json
+
 plugins:
   - serverless-offline
 

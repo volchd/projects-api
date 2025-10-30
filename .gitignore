@@ -1,2 +1,4 @@
-.serverless
-node_modules
+node_modules/
+dist/
+.serverless/
+.esbuild/

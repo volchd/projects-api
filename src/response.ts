@@ -1,4 +1,6 @@
-function json(statusCode, body) {
+import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+
+export function json<T>(statusCode: number, body: T): APIGatewayProxyStructuredResultV2 {
   return {
     statusCode,
     headers: {
@@ -8,5 +10,3 @@ function json(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
-
-module.exports = { json };
