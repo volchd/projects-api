@@ -7,7 +7,6 @@ export interface Project {
 }
 
 export interface CreateProjectPayload {
-  userId: string;
   name: string;
   description?: string | null;
 }

@@ -59,13 +59,12 @@ describe('create', () => {
   it('validates required fields', async () => {
     const response = await create(
       baseEvent({
-        body: JSON.stringify({ userId: 1, name: null, description: 10 }),
+        body: JSON.stringify({ name: null, description: 10 }),
       }),
     );
 
     expect(response.statusCode).toBe(400);
     expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
-      'userId (string) is required',
       'name (string) is required',
       'description must be a string if provided',
     ]);
@@ -92,14 +91,14 @@ describe('create', () => {
 
     const response = await create(
       baseEvent({
-        body: JSON.stringify({ userId: 'user-1', name: 'My Project' }),
+        body: JSON.stringify({ name: 'My Project' }),
       }),
     );
 
     expect(response.statusCode).toBe(201);
     expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
       id: 'project-123',
-      userId: 'user-1',
+      userId: 'demo-user',
       name: 'My Project',
       description: null,
     });
@@ -112,7 +111,7 @@ describe('create', () => {
       ConditionExpression: 'attribute_not_exists(id)',
       Item: {
         id: 'project-123',
-        userId: 'user-1',
+        userId: 'demo-user',
         name: 'My Project',
         description: null,
       },
@@ -126,7 +125,7 @@ describe('create', () => {
 
     const response = await create(
       baseEvent({
-        body: JSON.stringify({ userId: 'user-1', name: 'My Project' }),
+        body: JSON.stringify({ name: 'My Project' }),
       }),
     );
 
@@ -188,34 +187,21 @@ describe('get', () => {
 });
 
 describe('listByUser', () => {
-  it('requires userId in the path', async () => {
-    const response = await listByUser(baseEvent());
-
-    expect(response.statusCode).toBe(400);
-    expect(parseBody<{ message: string }>(response.body)).toEqual({
-      message: 'userId path parameter is required',
-    });
-  });
-
   it('returns user projects', async () => {
     sendMock.mockResolvedValueOnce({
       Items: [
-        { id: 'a', userId: 'user-1', name: 'First' },
-        { id: 'b', userId: 'user-1', name: 'Second' },
+        { id: 'a', userId: 'demo-user', name: 'First' },
+        { id: 'b', userId: 'demo-user', name: 'Second' },
       ],
     });
 
-    const response = await listByUser(
-      baseEvent({
-        pathParameters: { userId: 'user-1' },
-      }),
-    );
+    const response = await listByUser(baseEvent());
 
     expect(response.statusCode).toBe(200);
     expect(parseBody<{ items: Array<Record<string, unknown>> }>(response.body)).toEqual({
       items: [
-        { id: 'a', userId: 'user-1', name: 'First' },
-        { id: 'b', userId: 'user-1', name: 'Second' },
+        { id: 'a', userId: 'demo-user', name: 'First' },
+        { id: 'b', userId: 'demo-user', name: 'Second' },
       ],
     });
 
@@ -225,7 +211,7 @@ describe('listByUser', () => {
       TableName: 'ProjectsTable',
       IndexName: 'UserIndex',
       KeyConditionExpression: 'userId = :u',
-      ExpressionAttributeValues: { ':u': 'user-1' },
+      ExpressionAttributeValues: { ':u': 'demo-user' },
     });
   });
 });

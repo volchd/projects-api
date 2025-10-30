@@ -37,6 +37,10 @@ const USER_INDEX = (() => {
   return value;
 })();
 
+export const resolveUserId = (_event: APIGatewayProxyEventV2): string => {
+  return 'demo-user';
+};
+
 const toStringOrNull = (value: unknown): string | null | undefined => {
   if (value == null) {
     return value === null ? null : undefined;
@@ -53,13 +57,8 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
   }
 
   const data = payload as Record<string, unknown>;
-  const userId = data.userId;
   const name = data.name;
   const description = toStringOrNull(data.description);
-
-  if (typeof userId !== 'string') {
-    errors.push('userId (string) is required');
-  }
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -75,7 +74,6 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
 
   return {
     value: {
-      userId: userId as string,
       name: name as string,
       description,
     },
@@ -153,9 +151,11 @@ export const create = async (
       return json(400, { errors });
     }
 
+    const userId = resolveUserId(event);
+
     const item: Project = {
       id: randomUUID(),
-      userId: value.userId,
+      userId,
       name: value.name,
       description: value.description ?? null,
     };
@@ -204,10 +204,7 @@ export const listByUser = async (
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyStructuredResultV2> => {
   try {
-    const userId = event.pathParameters?.userId;
-    if (!userId) {
-      return json(400, { message: 'userId path parameter is required' });
-    }
+    const userId = resolveUserId(event);
 
     console.log('[listByUser] Querying projects', {
       table: TABLE_NAME,

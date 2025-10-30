@@ -71,7 +71,7 @@ functions:
     events:
       - httpApi:
           method: GET
-          path: /users/{userId}/projects
+          path: /projects
           cors: true
 
   updateProject:

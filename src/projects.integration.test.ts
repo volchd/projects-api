@@ -16,7 +16,7 @@ import {
   it,
   vi,
 } from 'vitest';
-import { create, get, listByUser, remove, update } from './projects';
+import { create, get, listByUser, remove, update, resolveUserId } from './projects';
 import { ddbDocClient } from './dynamodb';
 
 vi.hoisted(() => {
@@ -45,6 +45,8 @@ const baseEvent = (
 const parseBody = <T>(responseBody: string | undefined): T =>
   JSON.parse(responseBody ?? '{}') as T;
 
+const hardcodedUserId = resolveUserId(baseEvent());
+
 interface ProjectAttributes {
   userId: string;
   name: string;
@@ -60,12 +62,11 @@ interface ProjectListResponse {
 }
 
 const createProject = async (
-  input: Partial<ProjectAttributes> = {},
+  input: Partial<Omit<ProjectAttributes, 'userId'>> = {},
 ): Promise<{ statusCode: number; project: ProjectRecord }> => {
   const response = await create(
     baseEvent({
       body: JSON.stringify({
-        userId: 'integration-user',
         name: 'Integration Project',
         description: 'Created via integration test',
         ...input,
@@ -148,7 +149,7 @@ describe('projects integration', () => {
 
     expect(statusCode).toBe(201);
     expect(project).toMatchObject<ProjectAttributes>({
-      userId: 'integration-user',
+      userId: hardcodedUserId,
       name: 'Integration Project',
       description: 'Created via integration test',
     });
@@ -229,9 +230,7 @@ describe('projects integration', () => {
       }
 
       const listResponse = await listByUser(
-        baseEvent({
-          pathParameters: { userId: project!.userId },
-        }),
+        baseEvent(),
       );
 
       expect(listResponse.statusCode).toBe(200);
