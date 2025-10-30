@@ -72,6 +72,20 @@ describe('create', () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when body contains invalid JSON', async () => {
+    const response = await create(
+      baseEvent({
+        body: '{invalid',
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'Invalid JSON body',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('persists a new project and returns 201', async () => {
     sendMock.mockResolvedValueOnce({});
     randomUUIDMock.mockReturnValueOnce('project-123');
@@ -107,6 +121,8 @@ describe('create', () => {
 
   it('returns 500 when DynamoDB call fails', async () => {
     sendMock.mockRejectedValueOnce(new Error('write failure'));
+    randomUUIDMock.mockReturnValueOnce('project-uuid');
+    randomUUIDMock.mockReturnValueOnce('error-uuid');
 
     const response = await create(
       baseEvent({
@@ -115,9 +131,9 @@ describe('create', () => {
     );
 
     expect(response.statusCode).toBe(500);
-    expect(parseBody<{ message: string; error: string }>(response.body)).toEqual({
+    expect(parseBody<{ message: string; requestId: string }>(response.body)).toEqual({
       message: 'Internal server error',
-      error: 'write failure',
+      requestId: 'error-uuid',
     });
   });
 });
@@ -238,6 +254,36 @@ describe('update', () => {
     });
   });
 
+  it('returns 400 when body contains invalid JSON', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: '{bad',
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'Invalid JSON body',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('validates description type', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ description: 123 }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'description must be a string or null if provided',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('updates provided fields', async () => {
     sendMock.mockResolvedValueOnce({
       Attributes: { id: 'project-1', name: 'Updated', description: 'Changed' },
@@ -285,6 +331,35 @@ describe('update', () => {
     expect(response.statusCode).toBe(404);
     expect(parseBody<{ message: string }>(response.body)).toEqual({ message: 'Not found' });
   });
+
+  it('allows clearing the description field with null', async () => {
+    sendMock.mockResolvedValueOnce({
+      Attributes: { id: 'project-1', description: null },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ description: null }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
+      id: 'project-1',
+      description: null,
+    });
+
+    const command = sendMock.mock.calls[0][0] as UpdateCommand;
+    expect(command).toBeInstanceOf(UpdateCommand);
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ':desc': null,
+    });
+    expect(command.input).toMatchObject({
+      UpdateExpression: 'SET #d = :desc',
+      ExpressionAttributeNames: { '#d': 'description' },
+    });
+  });
 });
 
 describe('remove', () => {
@@ -307,7 +382,7 @@ describe('remove', () => {
     );
 
     expect(response.statusCode).toBe(204);
-    expect(parseBody<Record<string, never>>(response.body)).toEqual({});
+    expect(response.body).toBeUndefined();
 
     const command = sendMock.mock.calls[0][0] as DeleteCommand;
     expect(command).toBeInstanceOf(DeleteCommand);

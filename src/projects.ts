@@ -14,8 +14,21 @@ import type {
 import { ddbDocClient } from './dynamodb';
 import { json } from './response';
 
-const TABLE_NAME = process.env.TABLE_NAME as string;
-const USER_INDEX = 'UserIndex';
+const TABLE_NAME = (() => {
+  const value = process.env.TABLE_NAME;
+  if (!value) {
+    throw new Error('TABLE_NAME environment variable is required');
+  }
+  return value;
+})();
+
+const USER_INDEX = (() => {
+  const value = process.env.USER_INDEX ?? 'UserIndex';
+  if (!value) {
+    throw new Error('USER_INDEX environment variable is required');
+  }
+  return value;
+})();
 
 interface Project {
   id: string;
@@ -38,6 +51,11 @@ interface UpdateProjectPayload {
 interface ValidationResult<T> {
   value?: T;
   errors: string[];
+}
+
+interface ParsedBodyResult {
+  value?: unknown;
+  error?: string;
 }
 
 const toStringOrNull = (value: unknown): string | null | undefined => {
@@ -105,11 +123,11 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateProjectPay
     }
   }
 
-  if ('description' in data && data.description != null) {
-    if (typeof data.description === 'string') {
+  if ('description' in data) {
+    if (data.description === null || typeof data.description === 'string') {
       result.description = data.description;
     } else {
-      errors.push('description must be a string if provided');
+      errors.push('description must be a string or null if provided');
     }
   }
 
@@ -120,30 +138,38 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateProjectPay
   return { value: result, errors };
 }
 
-const parseBody = (event: APIGatewayProxyEventV2): unknown =>
-  event.body ? JSON.parse(event.body) : undefined;
-
-const handleError = (error: unknown): APIGatewayProxyStructuredResultV2 => {
-  const hasMessage = typeof error === 'object' && error !== null && 'message' in error;
-  const message = hasMessage ? (error as { message?: unknown }).message : undefined;
-
-  console.error(error);
-
-  if (hasMessage && message != null) {
-    return json(500, {
-      message: 'Internal server error',
-      error: typeof message === 'string' ? message : String(message),
-    });
+const parseBody = (event: APIGatewayProxyEventV2): ParsedBodyResult => {
+  if (!event.body) {
+    return {};
   }
 
-  return json(500, { message: 'Internal server error' });
+  try {
+    return { value: JSON.parse(event.body) };
+  } catch {
+    return { error: 'Invalid JSON body' };
+  }
+};
+
+const handleError = (error: unknown): APIGatewayProxyStructuredResultV2 => {
+  const requestId = randomUUID();
+  console.error(`[${requestId}]`, error);
+
+  return json(500, {
+    message: 'Internal server error',
+    requestId,
+  });
 };
 
 export const create = async (
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyStructuredResultV2> => {
   try {
-    const { value, errors } = parseCreatePayload(parseBody(event));
+    const { value: body, error: bodyError } = parseBody(event);
+    if (bodyError) {
+      return json(400, { errors: [bodyError] });
+    }
+
+    const { value, errors } = parseCreatePayload(body);
     if (!value || errors.length) {
       return json(400, { errors });
     }
@@ -237,7 +263,12 @@ export const update = async (
       return json(400, { message: 'id path parameter is required' });
     }
 
-    const { value, errors } = parseUpdatePayload(parseBody(event));
+    const { value: body, error: bodyError } = parseBody(event);
+    if (bodyError) {
+      return json(400, { errors: [bodyError] });
+    }
+
+    const { value, errors } = parseUpdatePayload(body);
     if (!value || errors.length) {
       return json(400, { errors });
     }
@@ -246,16 +277,17 @@ export const update = async (
     const exprNames: Record<string, string> = {};
     const exprValues: Record<string, NativeAttributeValue> = {};
 
-    if (value.name != null) {
+    if (value.name !== undefined) {
       names.push('#n = :name');
       exprNames['#n'] = 'name';
       exprValues[':name'] = value.name;
     }
 
-    if (value.description != null) {
+    if (Object.prototype.hasOwnProperty.call(value, 'description')) {
+      const description = value.description ?? null;
       names.push('#d = :desc');
       exprNames['#d'] = 'description';
-      exprValues[':desc'] = value.description;
+      exprValues[':desc'] = description;
     }
 
     if (names.length === 0) {
@@ -303,7 +335,7 @@ export const remove = async (
       }),
     );
 
-    return json(204, {});
+    return json(204);
   } catch (error) {
     if (error && typeof error === 'object' && 'name' in error) {
       const errName = String((error as { name?: unknown }).name);
