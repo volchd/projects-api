@@ -45,6 +45,12 @@ Use watch mode while iterating locally:
 npm run test:watch
 ```
 
+5) (Optional) Run the integration test against DynamoDB Local. Leave the container from step 1 running and execute:
+```bash
+npm test -- src/projects.integration.test.ts
+```
+This test provisions a throwaway table in the local instance, exercises the full CRUD flow, and then cleans everything up.
+
 ## Endpoints
 - `POST   /projects` — create a project
 - `GET    /projects/{id}` — get a project by id
@@ -91,3 +97,4 @@ npm run remove
 - The code auto-detects `serverless-offline` via `IS_OFFLINE` and points to `http://localhost:8000` for DynamoDB Local.
 - For real AWS deploys, no special config is needed—the SDK will use the default AWS credentials/region.
 - The table uses PAY_PER_REQUEST billing and includes a `UserIndex` GSI to list projects by `userId`.
+- Unit tests use mocked DynamoDB clients for fast iteration; the integration test hits the real local DynamoDB container to validate end-to-end behavior.
