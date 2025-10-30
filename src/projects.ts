@@ -13,6 +13,13 @@ import type {
 } from 'aws-lambda';
 import { ddbDocClient } from './dynamodb';
 import { json } from './response';
+import type {
+  CreateProjectPayload,
+  ParsedBodyResult,
+  Project,
+  UpdateProjectPayload,
+  ValidationResult,
+} from './projects.types';
 
 const TABLE_NAME = (() => {
   const value = process.env.TABLE_NAME;
@@ -29,34 +36,6 @@ const USER_INDEX = (() => {
   }
   return value;
 })();
-
-interface Project {
-  id: string;
-  userId: string;
-  name: string;
-  description: string | null;
-}
-
-interface CreateProjectPayload {
-  userId: string;
-  name: string;
-  description?: string | null;
-}
-
-interface UpdateProjectPayload {
-  name?: string;
-  description?: string | null;
-}
-
-interface ValidationResult<T> {
-  value?: T;
-  errors: string[];
-}
-
-interface ParsedBodyResult {
-  value?: unknown;
-  error?: string;
-}
 
 const toStringOrNull = (value: unknown): string | null | undefined => {
   if (value == null) {
