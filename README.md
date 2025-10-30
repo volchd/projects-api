@@ -59,7 +59,7 @@ This test provisions a throwaway table in the local instance, exercises the full
 ## Endpoints
 - `POST   /projects` — create a project
 - `GET    /projects/{id}` — get a project by id
-- `GET    /users/{userId}/projects` — list projects by userId (via GSI)
+- `GET    /projects` — list projects by userId (via GSI)
 - `PUT    /projects/{id}` — update name/description
 - `DELETE /projects/{id}` — delete by id
 
@@ -76,7 +76,7 @@ curl -s http://localhost:3000/projects/<id>
 
 List by user:
 ```bash
-curl -s http://localhost:3000/users/u1/projects
+curl -s http://localhost:3000/projects
 ```
 
 Update:
