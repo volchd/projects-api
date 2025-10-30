@@ -36,6 +36,15 @@ aws dynamodb create-table   --table-name projects-api-dev-Projects   --attribute
 ```
 (Replace table name/region if you changed them in `serverless.yml`.)
 
+4) Run the unit tests (Vitest) to verify the handlers:
+```bash
+npm test
+```
+Use watch mode while iterating locally:
+```bash
+npm run test:watch
+```
+
 ## Endpoints
 - `POST   /projects` — create a project
 - `GET    /projects/{id}` — get a project by id
