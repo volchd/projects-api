@@ -16,7 +16,8 @@ import {
   it,
   vi,
 } from 'vitest';
-import { create, get, listByUser, remove, update, resolveUserId } from './projects';
+import { create, get, listByUser, remove, update } from './projects';
+import { resolveUserId } from './auth';
 import { ddbDocClient } from './dynamodb';
 
 vi.hoisted(() => {

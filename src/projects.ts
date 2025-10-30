@@ -11,6 +11,7 @@ import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda';
+import { resolveUserId } from './auth';
 import { ddbDocClient } from './dynamodb';
 import { json } from './response';
 import type {
@@ -36,10 +37,6 @@ const USER_INDEX = (() => {
   }
   return value;
 })();
-
-export const resolveUserId = (_event: APIGatewayProxyEventV2): string => {
-  return 'demo-user';
-};
 
 const toStringOrNull = (value: unknown): string | null | undefined => {
   if (value == null) {
