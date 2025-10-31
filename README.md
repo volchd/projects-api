@@ -1,12 +1,26 @@
 # Projects API (Serverless + Node.js + DynamoDB Local via Docker)
 
-A minimal CRUD API for a `Project` object:
+A minimal CRUD API for `Project` objects with nested `Task` resources.
+
+Project shape:
 ```json
 {
   "id": "uuid",
   "userId": "user-123",
   "name": "My Project",
   "description": "optional"
+}
+```
+
+Task shape:
+```json
+{
+  "projectId": "project-uuid",
+  "taskId": "task-uuid",
+  "name": "Draft docs",
+  "description": "optional",
+  "createdAt": "ISO timestamp",
+  "updatedAt": "ISO timestamp"
 }
 ```
 
@@ -32,7 +46,7 @@ API base URL will be `http://localhost:3000`.
 
 3) Create the DynamoDB table (automatically created on real deploy). For local dev with offline, run a no-op deploy once or use AWS CLI. An easy path is to actually `serverless deploy` to AWS (will create the table) and continue developing offline. Alternatively, you can create the table against local DynamoDB using AWS CLI:
 ```bash
-aws dynamodb create-table   --table-name projects-api-dev-Projects   --attribute-definitions AttributeName=id,AttributeType=S AttributeName=userId,AttributeType=S   --key-schema AttributeName=id,KeyType=HASH   --billing-mode PAY_PER_REQUEST   --global-secondary-indexes 'IndexName=UserIndex,KeySchema=[{AttributeName=userId,KeyType=HASH}],Projection={ProjectionType=ALL}'   --endpoint-url http://localhost:8000   --region us-east-1
+aws dynamodb create-table   --table-name projects-api-dev-Projects   --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S AttributeName=GSI1PK,AttributeType=S AttributeName=GSI1SK,AttributeType=S   --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE   --billing-mode PAY_PER_REQUEST   --global-secondary-indexes 'IndexName=GSI1,KeySchema=[{AttributeName=GSI1PK,KeyType=HASH},{AttributeName=GSI1SK,KeyType=RANGE}],Projection={ProjectionType=ALL}'   --endpoint-url http://localhost:8000   --region us-east-1
 ```
 (Replace table name/region if you changed them in `serverless.yml`.)
 
@@ -62,6 +76,11 @@ This test provisions a throwaway table in the local instance, exercises the full
 - `GET    /projects` — list projects by userId (via GSI)
 - `PUT    /projects/{id}` — update name/description
 - `DELETE /projects/{id}` — delete by id
+- `POST   /projects/{projectId}/tasks` — create a task under a project (validates project ownership)
+- `GET    /projects/{projectId}/tasks` — list tasks for a project
+- `GET    /projects/{projectId}/tasks/{taskId}` — fetch a single task
+- `PUT    /projects/{projectId}/tasks/{taskId}` — update name/description for a task
+- `DELETE /projects/{projectId}/tasks/{taskId}` — delete a task
 
 ## Example Requests
 Create:
@@ -89,6 +108,16 @@ Delete:
 curl -i -X DELETE http://localhost:3000/projects/<id>
 ```
 
+Create task:
+```bash
+curl -s -X POST http://localhost:3000/projects/<projectId>/tasks   -H 'Content-Type: application/json'   -d '{"name":"Draft docs","description":"initial outline"}'
+```
+
+List tasks:
+```bash
+curl -s http://localhost:3000/projects/<projectId>/tasks
+```
+
 ## Deploy to AWS (optional)
 ```bash
 npm run deploy
@@ -101,5 +130,5 @@ npm run remove
 ## Notes
 - The code auto-detects `serverless-offline` via `IS_OFFLINE` and points to `http://localhost:8000` for DynamoDB Local.
 - For real AWS deploys, no special config is needed—the SDK will use the default AWS credentials/region.
-- The table uses PAY_PER_REQUEST billing and includes a `UserIndex` GSI to list projects by `userId`.
+- Projects and tasks share a single DynamoDB table: projects live at `PK=PROJECT#<id>, SK=PROJECT`, while tasks use `PK=PROJECT#<id>, SK=TASK#<taskId>`. A GSI (`GSI1`) indexes projects by `userId`.
 - Unit tests use mocked DynamoDB clients for fast iteration; the integration test hits the real local DynamoDB container to validate end-to-end behavior.

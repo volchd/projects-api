@@ -90,6 +90,46 @@ functions:
           path: /projects/{id}
           cors: true
 
+  createTask:
+    handler: src/tasks.create
+    events:
+      - httpApi:
+          method: POST
+          path: /projects/{projectId}/tasks
+          cors: true
+
+  getTask:
+    handler: src/tasks.get
+    events:
+      - httpApi:
+          method: GET
+          path: /projects/{projectId}/tasks/{taskId}
+          cors: true
+
+  listTasksByProject:
+    handler: src/tasks.listByProject
+    events:
+      - httpApi:
+          method: GET
+          path: /projects/{projectId}/tasks
+          cors: true
+
+  updateTask:
+    handler: src/tasks.update
+    events:
+      - httpApi:
+          method: PUT
+          path: /projects/{projectId}/tasks/{taskId}
+          cors: true
+
+  deleteTask:
+    handler: src/tasks.remove
+    events:
+      - httpApi:
+          method: DELETE
+          path: /projects/{projectId}/tasks/{taskId}
+          cors: true
+
 resources:
   Resources:
     ProjectsTable:
@@ -98,17 +138,25 @@ resources:
         TableName: ${self:provider.environment.TABLE_NAME}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: id
+          - AttributeName: PK
             AttributeType: S
-          - AttributeName: userId
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
             AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: PK
             KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
         GlobalSecondaryIndexes:
-          - IndexName: UserIndex
+          - IndexName: GSI1
             KeySchema:
-              - AttributeName: userId
+              - AttributeName: GSI1PK
                 KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL

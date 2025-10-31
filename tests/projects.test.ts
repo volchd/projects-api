@@ -108,12 +108,18 @@ describe('create', () => {
     expect(command).toBeInstanceOf(PutCommand);
     expect(command.input).toMatchObject({
       TableName: 'ProjectsTable',
-      ConditionExpression: 'attribute_not_exists(id)',
+      ConditionExpression: 'attribute_not_exists(PK)',
       Item: {
+        PK: 'PROJECT#project-123',
+        SK: 'PROJECT',
+        projectId: 'project-123',
         id: 'project-123',
         userId: 'demo-user',
         name: 'My Project',
         description: null,
+        entityType: 'Project',
+        GSI1PK: 'USER#demo-user',
+        GSI1SK: 'PROJECT#project-123',
       },
     });
   });
@@ -162,7 +168,14 @@ describe('get', () => {
 
   it('returns the project when found', async () => {
     sendMock.mockResolvedValueOnce({
-      Item: { id: 'project-1', name: 'Proj' },
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        name: 'Proj',
+        description: null,
+      },
     });
 
     const response = await get(
@@ -174,14 +187,16 @@ describe('get', () => {
     expect(response.statusCode).toBe(200);
     expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
       id: 'project-1',
+      userId: 'demo-user',
       name: 'Proj',
+      description: null,
     });
 
     const command = sendMock.mock.calls[0][0] as GetCommand;
     expect(command).toBeInstanceOf(GetCommand);
     expect(command.input).toMatchObject({
       TableName: 'ProjectsTable',
-      Key: { id: 'project-1' },
+      Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
     });
   });
 });
@@ -190,8 +205,22 @@ describe('listByUser', () => {
   it('returns user projects', async () => {
     sendMock.mockResolvedValueOnce({
       Items: [
-        { id: 'a', userId: 'demo-user', name: 'First' },
-        { id: 'b', userId: 'demo-user', name: 'Second' },
+        {
+          PK: 'PROJECT#a',
+          SK: 'PROJECT',
+          projectId: 'a',
+          userId: 'demo-user',
+          name: 'First',
+          description: null,
+        },
+        {
+          PK: 'PROJECT#b',
+          SK: 'PROJECT',
+          projectId: 'b',
+          userId: 'demo-user',
+          name: 'Second',
+          description: 'desc',
+        },
       ],
     });
 
@@ -200,8 +229,8 @@ describe('listByUser', () => {
     expect(response.statusCode).toBe(200);
     expect(parseBody<{ items: Array<Record<string, unknown>> }>(response.body)).toEqual({
       items: [
-        { id: 'a', userId: 'demo-user', name: 'First' },
-        { id: 'b', userId: 'demo-user', name: 'Second' },
+        { id: 'a', userId: 'demo-user', name: 'First', description: null },
+        { id: 'b', userId: 'demo-user', name: 'Second', description: 'desc' },
       ],
     });
 
@@ -209,9 +238,9 @@ describe('listByUser', () => {
     expect(command).toBeInstanceOf(QueryCommand);
     expect(command.input).toMatchObject({
       TableName: 'ProjectsTable',
-      IndexName: 'UserIndex',
-      KeyConditionExpression: 'userId = :u',
-      ExpressionAttributeValues: { ':u': 'demo-user' },
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :pk',
+      ExpressionAttributeValues: { ':pk': 'USER#demo-user' },
     });
   });
 });
@@ -272,7 +301,14 @@ describe('update', () => {
 
   it('updates provided fields', async () => {
     sendMock.mockResolvedValueOnce({
-      Attributes: { id: 'project-1', name: 'Updated', description: 'Changed' },
+      Attributes: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        name: 'Updated',
+        description: 'Changed',
+      },
     });
 
     const response = await update(
@@ -285,6 +321,7 @@ describe('update', () => {
     expect(response.statusCode).toBe(200);
     expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
       id: 'project-1',
+      userId: 'demo-user',
       name: 'Updated',
       description: 'Changed',
     });
@@ -293,8 +330,8 @@ describe('update', () => {
     expect(command).toBeInstanceOf(UpdateCommand);
     expect(command.input).toMatchObject({
       TableName: 'ProjectsTable',
-      Key: { id: 'project-1' },
-      ConditionExpression: 'attribute_exists(id)',
+      Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
+      ConditionExpression: 'attribute_exists(PK)',
       UpdateExpression: 'SET #n = :name, #d = :desc',
       ExpressionAttributeNames: { '#n': 'name', '#d': 'description' },
       ExpressionAttributeValues: { ':name': 'Updated', ':desc': 'Changed' },
@@ -320,7 +357,14 @@ describe('update', () => {
 
   it('allows clearing the description field with null', async () => {
     sendMock.mockResolvedValueOnce({
-      Attributes: { id: 'project-1', description: null },
+      Attributes: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        description: null,
+        name: 'Existing',
+      },
     });
 
     const response = await update(
@@ -333,6 +377,8 @@ describe('update', () => {
     expect(response.statusCode).toBe(200);
     expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
       id: 'project-1',
+      userId: 'demo-user',
+      name: 'Existing',
       description: null,
     });
 
@@ -359,7 +405,19 @@ describe('remove', () => {
   });
 
   it('removes an existing project', async () => {
-    sendMock.mockResolvedValueOnce({});
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          name: 'Existing',
+          description: null,
+        },
+      })
+      .mockResolvedValueOnce({ Items: [] })
+      .mockResolvedValueOnce({});
 
     const response = await remove(
       baseEvent({
@@ -370,19 +428,46 @@ describe('remove', () => {
     expect(response.statusCode).toBe(204);
     expect(response.body).toBeUndefined();
 
-    const command = sendMock.mock.calls[0][0] as DeleteCommand;
-    expect(command).toBeInstanceOf(DeleteCommand);
-    expect(command.input).toMatchObject({
+    expect(sendMock).toHaveBeenCalledTimes(3);
+    const deleteCommand = sendMock.mock.calls[2][0] as DeleteCommand;
+    expect(deleteCommand).toBeInstanceOf(DeleteCommand);
+    expect(deleteCommand.input).toMatchObject({
       TableName: 'ProjectsTable',
-      Key: { id: 'project-1' },
-      ConditionExpression: 'attribute_exists(id)',
+      Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
+      ConditionExpression: 'attribute_exists(PK)',
     });
   });
 
-  it('returns 404 when delete fails due to missing project', async () => {
+  it('returns 404 when project is missing', async () => {
+    sendMock.mockResolvedValueOnce({ Item: undefined });
+
+    const response = await remove(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+      }),
+    );
+
+    expect(response.statusCode).toBe(404);
+    expect(parseBody<{ message: string }>(response.body)).toEqual({ message: 'Not found' });
+  });
+
+  it('returns 404 when delete fails due to a conditional check', async () => {
     const error = new Error('missing');
     (error as { name: string }).name = 'ConditionalCheckFailedException';
-    sendMock.mockRejectedValueOnce(error);
+
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          name: 'Existing',
+          description: null,
+        },
+      })
+      .mockResolvedValueOnce({ Items: [] })
+      .mockRejectedValueOnce(error);
 
     const response = await remove(
       baseEvent({

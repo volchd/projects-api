@@ -109,14 +109,22 @@ describe('projects integration', () => {
         TableName: tableName,
         BillingMode: 'PAY_PER_REQUEST',
         AttributeDefinitions: [
-          { AttributeName: 'id', AttributeType: 'S' },
-          { AttributeName: 'userId', AttributeType: 'S' },
+          { AttributeName: 'PK', AttributeType: 'S' },
+          { AttributeName: 'SK', AttributeType: 'S' },
+          { AttributeName: 'GSI1PK', AttributeType: 'S' },
+          { AttributeName: 'GSI1SK', AttributeType: 'S' },
         ],
-        KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }],
+        KeySchema: [
+          { AttributeName: 'PK', KeyType: 'HASH' },
+          { AttributeName: 'SK', KeyType: 'RANGE' },
+        ],
         GlobalSecondaryIndexes: [
           {
-            IndexName: 'UserIndex',
-            KeySchema: [{ AttributeName: 'userId', KeyType: 'HASH' }],
+            IndexName: 'GSI1',
+            KeySchema: [
+              { AttributeName: 'GSI1PK', KeyType: 'HASH' },
+              { AttributeName: 'GSI1SK', KeyType: 'RANGE' },
+            ],
             Projection: { ProjectionType: 'ALL' },
           },
         ],
