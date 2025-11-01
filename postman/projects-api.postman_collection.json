@@ -36,12 +36,17 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "  try {",
-                  "    const data = pm.response.json();",
-                  "    if (data && data.id) {",
-                  "      pm.collectionVariables.set(\"projectId\", data.id);",
-                  "    } else if (data && data.projectId) {",
-                  "      pm.collectionVariables.set(\"projectId\", data.projectId);",
-                  "    }",
+                    "    const data = pm.response.json();",
+                    "    const expectedStatuses = ['TODO', 'IN PROGRESS', 'COMPLETE'];",
+                    "    pm.test('Project response includes default statuses', function () {",
+                    "      pm.expect(Array.isArray(data.statuses), 'statuses array').to.be.true;",
+                    "      pm.expect(data.statuses).to.eql(expectedStatuses);",
+                    "    });",
+                    "    if (data && data.id) {",
+                      "      pm.collectionVariables.set(\"projectId\", data.id);",
+                    "    } else if (data && data.projectId) {",
+                      "      pm.collectionVariables.set(\"projectId\", data.projectId);",
+                    "    }",
                   "  } catch (err) {",
                   "    console.warn('Failed to parse create project response', err);",
                   "  }",
@@ -79,12 +84,38 @@
                 "projects"
               ]
             },
-            "description": "Create a project for the current user."
+            "description": "Create a project for the current user. The response includes the default statuses: TODO, IN PROGRESS, COMPLETE."
           },
           "response": []
         },
         {
           "name": "List Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  try {",
+                  "    const data = pm.response.json();",
+                  "    const expectedStatuses = ['TODO', 'IN PROGRESS', 'COMPLETE'];",
+                  "    pm.test('Projects include default statuses', function () {",
+                  "      const items = Array.isArray(data.items) ? data.items : [];",
+                  "      items.forEach(function (project, index) {",
+                  "        pm.expect(Array.isArray(project.statuses), 'statuses array [' + index + ']').to.be.true;",
+                  "        pm.expect(project.statuses).to.eql(expectedStatuses);",
+                  "      });",
+                  "    });",
+                  "  } catch (err) {",
+                  "    console.warn('Failed to parse list projects response', err);",
+                  "    throw err;",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
@@ -96,12 +127,35 @@
                 "projects"
               ]
             },
-            "description": "List all projects for the current user (uses GSI lookup)."
+            "description": "List all projects for the current user (uses GSI lookup). Each project includes the default statuses: TODO, IN PROGRESS, COMPLETE."
           },
           "response": []
         },
         {
           "name": "Get Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  try {",
+                  "    const data = pm.response.json();",
+                  "    const expectedStatuses = ['TODO', 'IN PROGRESS', 'COMPLETE'];",
+                  "    pm.test('Project response includes statuses', function () {",
+                  "      pm.expect(Array.isArray(data.statuses), 'statuses array').to.be.true;",
+                  "      pm.expect(data.statuses).to.eql(expectedStatuses);",
+                  "    });",
+                  "  } catch (err) {",
+                  "    console.warn('Failed to parse get project response', err);",
+                  "    throw err;",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
@@ -114,7 +168,7 @@
                 "{{projectId}}"
               ]
             },
-            "description": "Fetch a single project by its id."
+            "description": "Fetch a single project by its id. Responses include the default statuses: TODO, IN PROGRESS, COMPLETE."
           },
           "response": []
         },
