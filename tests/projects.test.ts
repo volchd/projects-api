@@ -21,6 +21,7 @@ vi.mock('node:crypto', () => ({
 import { create, get, listByUser, update, remove } from '../src/projects';
 import { ddbDocClient } from '../src/dynamodb';
 import { randomUUID } from 'node:crypto';
+import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
 
 type MockSend = ReturnType<typeof vi.fn>;
 
@@ -101,6 +102,7 @@ describe('create', () => {
       userId: 'demo-user',
       name: 'My Project',
       description: null,
+      statuses: DEFAULT_PROJECT_STATUSES,
     });
 
     expect(sendMock).toHaveBeenCalledTimes(1);
@@ -120,6 +122,7 @@ describe('create', () => {
         entityType: 'Project',
         GSI1PK: 'USER#demo-user',
         GSI1SK: 'PROJECT#project-123',
+        statuses: DEFAULT_PROJECT_STATUSES,
       },
     });
   });
@@ -190,6 +193,7 @@ describe('get', () => {
       userId: 'demo-user',
       name: 'Proj',
       description: null,
+      statuses: DEFAULT_PROJECT_STATUSES,
     });
 
     const command = sendMock.mock.calls[0][0] as GetCommand;
@@ -212,6 +216,7 @@ describe('listByUser', () => {
           userId: 'demo-user',
           name: 'First',
           description: null,
+          statuses: DEFAULT_PROJECT_STATUSES,
         },
         {
           PK: 'PROJECT#b',
@@ -220,6 +225,7 @@ describe('listByUser', () => {
           userId: 'demo-user',
           name: 'Second',
           description: 'desc',
+          statuses: DEFAULT_PROJECT_STATUSES,
         },
       ],
     });
@@ -229,8 +235,20 @@ describe('listByUser', () => {
     expect(response.statusCode).toBe(200);
     expect(parseBody<{ items: Array<Record<string, unknown>> }>(response.body)).toEqual({
       items: [
-        { id: 'a', userId: 'demo-user', name: 'First', description: null },
-        { id: 'b', userId: 'demo-user', name: 'Second', description: 'desc' },
+        {
+          id: 'a',
+          userId: 'demo-user',
+          name: 'First',
+          description: null,
+          statuses: DEFAULT_PROJECT_STATUSES,
+        },
+        {
+          id: 'b',
+          userId: 'demo-user',
+          name: 'Second',
+          description: 'desc',
+          statuses: DEFAULT_PROJECT_STATUSES,
+        },
       ],
     });
 
@@ -308,6 +326,7 @@ describe('update', () => {
         userId: 'demo-user',
         name: 'Updated',
         description: 'Changed',
+        statuses: DEFAULT_PROJECT_STATUSES,
       },
     });
 
@@ -324,6 +343,7 @@ describe('update', () => {
       userId: 'demo-user',
       name: 'Updated',
       description: 'Changed',
+      statuses: DEFAULT_PROJECT_STATUSES,
     });
 
     const command = sendMock.mock.calls[0][0] as UpdateCommand;
@@ -364,6 +384,7 @@ describe('update', () => {
         userId: 'demo-user',
         description: null,
         name: 'Existing',
+        statuses: DEFAULT_PROJECT_STATUSES,
       },
     });
 
@@ -380,6 +401,7 @@ describe('update', () => {
       userId: 'demo-user',
       name: 'Existing',
       description: null,
+      statuses: DEFAULT_PROJECT_STATUSES,
     });
 
     const command = sendMock.mock.calls[0][0] as UpdateCommand;

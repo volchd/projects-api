@@ -21,6 +21,7 @@ import {
   create as createProjectHandler,
   remove as removeProjectHandler,
 } from '../src/projects';
+import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
 import {
   create as createTaskHandler,
   get as getTaskHandler,
@@ -62,6 +63,7 @@ interface ProjectRecord {
   userId: string;
   name: string;
   description: string | null;
+  statuses: string[];
 }
 
 interface TaskRecord {
@@ -196,6 +198,7 @@ describe('tasks integration', () => {
     const { statusCode, project: created } = await createProject();
     expect(statusCode).toBe(201);
     expect(created.userId).toBe(hardcodedUserId);
+    expect(created.statuses).toEqual(DEFAULT_PROJECT_STATUSES);
     project = created;
   });
 

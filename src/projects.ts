@@ -31,7 +31,9 @@ import type {
   Project,
   UpdateProjectPayload,
   ValidationResult,
+  ProjectStatus,
 } from './projects.types';
+import { DEFAULT_PROJECT_STATUSES } from './projects.types';
 
 const TABLE_NAME = (() => {
   const value = process.env.TABLE_NAME;
@@ -46,6 +48,19 @@ const toStringOrNull = (value: unknown): string | null | undefined => {
     return value === null ? null : undefined;
   }
   return typeof value === 'string' ? value : undefined;
+};
+
+const isProjectStatus = (status: unknown): status is ProjectStatus =>
+  typeof status === 'string' && (DEFAULT_PROJECT_STATUSES as readonly string[]).includes(status);
+
+const toStatuses = (value: unknown): ProjectStatus[] => {
+  if (!Array.isArray(value)) {
+    return [...DEFAULT_PROJECT_STATUSES];
+  }
+
+  const statuses = value.filter(isProjectStatus);
+
+  return statuses.length ? [...statuses] : [...DEFAULT_PROJECT_STATUSES];
 };
 
 function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPayload> {
@@ -151,6 +166,7 @@ const toProject = (item: Record<string, unknown> | undefined): Project | undefin
     userId: String(item.userId),
     name: String(item.name),
     description: (item.description ?? null) as string | null,
+    statuses: toStatuses(item.statuses),
   };
 };
 
@@ -193,6 +209,7 @@ export const create = async (
       entityType: PROJECT_ENTITY_TYPE,
       GSI1PK: projectGsiPk(userId),
       GSI1SK: projectGsiSk(projectId),
+      statuses: [...DEFAULT_PROJECT_STATUSES],
     };
 
     await ddbDocClient.send(

@@ -4,6 +4,7 @@ export interface Project {
   userId: string;
   name: string;
   description: string | null;
+  statuses: ProjectStatus[];
 }
 
 export interface CreateProjectPayload {
@@ -25,3 +26,7 @@ export interface ParsedBodyResult {
   value?: unknown;
   error?: string;
 }
+
+export type ProjectStatus = 'TODO' | 'IN PROGRESS' | 'COMPLETE';
+
+export const DEFAULT_PROJECT_STATUSES: ProjectStatus[] = ['TODO', 'IN PROGRESS', 'COMPLETE'];

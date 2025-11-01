@@ -19,6 +19,7 @@ import {
 import { create, get, listByUser, remove, update } from '../src/projects';
 import { resolveUserId } from '../src/auth';
 import { ddbDocClient } from '../src/dynamodb';
+import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
 
 vi.hoisted(() => {
   process.env.IS_OFFLINE = 'true';
@@ -52,6 +53,7 @@ interface ProjectAttributes {
   userId: string;
   name: string;
   description: string | null;
+  statuses: string[];
 }
 
 interface ProjectRecord extends ProjectAttributes {
@@ -161,6 +163,7 @@ describe('projects integration', () => {
       userId: hardcodedUserId,
       name: 'Integration Project',
       description: 'Created via integration test',
+      statuses: DEFAULT_PROJECT_STATUSES,
     });
 
     const deleteResponse = await remove(
@@ -230,6 +233,7 @@ describe('projects integration', () => {
         userId: project!.userId,
         name: 'Existing Project',
         description: project!.description,
+        statuses: DEFAULT_PROJECT_STATUSES,
       });
     });
 
@@ -250,7 +254,10 @@ describe('projects integration', () => {
           (item) =>
             item.userId === project!.userId &&
             item.name === project!.name &&
-            item.description === project!.description,
+            item.description === project!.description &&
+            Array.isArray(item.statuses) &&
+            item.statuses.length === DEFAULT_PROJECT_STATUSES.length &&
+            item.statuses.every((status, index) => status === DEFAULT_PROJECT_STATUSES[index]),
         ),
       ).toBe(true);
     });
@@ -273,6 +280,7 @@ describe('projects integration', () => {
       expect(updated).toMatchObject({
         id: project!.id,
         description: 'Updated description',
+        statuses: DEFAULT_PROJECT_STATUSES,
       });
 
       project = { ...project!, description: 'Updated description' };
