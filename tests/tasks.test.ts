@@ -147,6 +147,7 @@ describe('create', () => {
       taskId: 'task-123',
       name: 'Write docs',
       description: null,
+      status: 'TODO',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -166,6 +167,7 @@ describe('create', () => {
       userId: 'demo-user',
       name: 'Write docs',
       description: null,
+      status: 'TODO',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -232,6 +234,7 @@ describe('get', () => {
       taskId: 'task-2',
       name: 'Existing task',
       description: 'Details',
+      status: 'TODO',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -290,6 +293,7 @@ describe('listByProject', () => {
             userId: 'demo-user',
             name: 'Task A',
             description: null,
+            status: 'TODO',
             createdAt: '2024-01-01T00:00:00.000Z',
             updatedAt: '2024-01-01T00:00:00.000Z',
           },
@@ -301,6 +305,7 @@ describe('listByProject', () => {
             userId: 'demo-user',
             name: 'Task B',
             description: 'details',
+            status: 'TODO',
             createdAt: '2024-01-01T00:00:00.000Z',
             updatedAt: '2024-01-01T00:00:00.000Z',
           },
@@ -321,6 +326,7 @@ describe('listByProject', () => {
           taskId: 'task-1',
           name: 'Task A',
           description: null,
+          status: 'TODO',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -329,6 +335,7 @@ describe('listByProject', () => {
           taskId: 'task-2',
           name: 'Task B',
           description: 'details',
+          status: 'TODO',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -436,6 +443,7 @@ describe('update', () => {
       taskId: 'task-1',
       name: 'Updated name',
       description: 'Updated description',
+      status: 'TODO',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });

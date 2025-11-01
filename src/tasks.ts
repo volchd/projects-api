@@ -24,9 +24,14 @@ import {
 } from './model';
 import { json } from './response';
 import type { ParsedBodyResult, ValidationResult } from './projects.types';
+import {
+  DEFAULT_TASK_STATUS,
+  isTaskStatus,
+} from './tasks.types';
 import type {
   CreateTaskPayload,
   Task,
+  TaskStatus,
   UpdateTaskPayload,
 } from './tasks.types';
 
@@ -153,6 +158,9 @@ const loadProjectForUser = async (
   return String(item.userId) === userId;
 };
 
+const toTaskStatus = (status: unknown): TaskStatus =>
+  isTaskStatus(status) ? status : DEFAULT_TASK_STATUS;
+
 const toTask = (item: Record<string, unknown> | undefined): Task | undefined => {
   if (!item) {
     return undefined;
@@ -167,6 +175,7 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     taskId: String(item.taskId),
     name: String(item.name),
     description: (item.description ?? null) as string | null,
+    status: toTaskStatus(item.status),
     createdAt: String(item.createdAt),
     updatedAt: String(item.updatedAt),
   };
@@ -208,6 +217,7 @@ export const create = async (
       userId,
       name: value.name,
       description: value.description ?? null,
+      status: DEFAULT_TASK_STATUS,
       createdAt: now,
       updatedAt: now,
       entityType: TASK_ENTITY_TYPE,
