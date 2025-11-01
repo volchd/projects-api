@@ -10,7 +10,11 @@
     "dev": "npm --workspaces --if-present run dev",
     "dev:api": "npm --workspace apps/api run dev",
     "dev:ui": "npm --workspace apps/ui run dev",
+    "build:api": "npm --workspace apps/api run build",
+    "build:ui": "npm --workspace apps/ui run build",
     "build": "npm --workspaces --if-present run build",
+    "test:api": "npm --workspace apps/api run test",
+    "test:ui": "npm --workspace apps/ui run test",
     "test": "npm --workspaces --if-present run test",
     "lint": "npm --workspaces --if-present run lint"
   }

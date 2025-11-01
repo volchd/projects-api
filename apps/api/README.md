@@ -31,15 +31,19 @@ Task shape:
 - Docker
 
 ## Quick Start (Local)
-1) Start DynamoDB Local:
+1) Install dependencies from the repository root (installs every workspace):
 ```bash
-npm run docker:up
+npm install
+```
+
+2) Start DynamoDB Local (from the root or inside `apps/api`):
+```bash
+npm --workspace apps/api run docker:up
 ```
 This launches DynamoDB Local at `http://localhost:8000`.
 
-2) Install deps and start API locally with serverless-offline:
+3) Start the API locally with serverless-offline:
 ```bash
-npm install
 npm run dev:api
 ```
 API base URL will be `http://localhost:3000`.
@@ -54,16 +58,16 @@ aws dynamodb create-table   --table-name projects-api-dev-Projects   --attribute
 
 4) Run the unit tests (Vitest) to verify the handlers:
 ```bash
-npm test
+npm run test:api
 ```
 Use watch mode while iterating locally:
 ```bash
-npm run test:watch
+npm --workspace apps/api run test:watch
 ```
 
 5) (Optional) Run the integration test against DynamoDB Local. Leave the container from step 1 running and execute:
 ```bash
-npm test -- tests/projects.integration.test.ts
+npm --workspace apps/api run test -- tests/projects.integration.test.ts
 ```
 This test provisions a throwaway table in the local instance, exercises the full CRUD flow, and then cleans everything up.
 
@@ -122,11 +126,11 @@ curl -s http://localhost:3000/projects/<projectId>/tasks
 
 ## Deploy to AWS (optional)
 ```bash
-npm run deploy
+npm --workspace apps/api run deploy
 ```
 This creates the DynamoDB table and API Gateway/Lambda infrastructure. To tear down:
 ```bash
-npm run remove
+npm --workspace apps/api run remove
 ```
 
 ## Notes

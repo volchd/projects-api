@@ -12,10 +12,23 @@ npm install
 npm run dev:ui
 ```
 
-The UI proxies `/projects` and `/tasks` requests to `http://localhost:3000` so the API should be running via `npm run dev:api`.
+The UI proxies `/projects` and `/tasks` requests to `http://localhost:3000`, so launch the API alongside it:
+```bash
+npm run dev:api
+```
 
 ## Environment
 - `VITE_API_BASE` (optional): override the API base URL. Leave unset to rely on the dev proxy.
+
+## Test & Build
+- Run UI unit tests:
+  ```bash
+  npm run test:ui
+  ```
+- Produce a production build:
+  ```bash
+  npm run build:ui
+  ```
 
 ## Deploy to AWS (S3 + CloudFront)
 1. Build the static bundle from the repo root:

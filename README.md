@@ -1,6 +1,6 @@
 # Projects Platform Workspace
 
-This repository now hosts both the serverless API and the upcoming UI inside an npm workspaces layout.
+This repository bundles the Serverless API and the Vite + React UI inside an npm workspaces layout. Workspaces keep each surface isolated while allowing shared tooling and types.
 
 ## Structure
 - `apps/api` — the existing Serverless + Node.js backend (moved from the old repo root).
@@ -13,20 +13,28 @@ Install dependencies for every workspace:
 npm install
 ```
 
-### API
+### Local Development
+Run the API (Serverless offline) in one terminal:
 ```bash
 npm run dev:api
 ```
-Rerun any of the original backend scripts from inside `apps/api` or through `npm --workspace apps/api`.
 
-### UI
-A UI workspace is ready at `apps/ui`. Scaffold your chosen stack (e.g. Next.js, Vite) and expose a `dev` script to integrate with the root runners.
+Run the UI (Vite dev server) in another terminal:
+```bash
+npm run dev:ui
+```
+Both commands can also be executed from within their workspaces via `npm install` followed by `npm run dev`, but using the root scripts keeps the workspace context consistent.
+
+> Tip: `npm run dev` will invoke any `dev` scripts that exist across all workspaces, but it runs them sequentially. Prefer the explicit `dev:*` commands above when you need both servers at the same time.
 
 ## Useful Commands
-- `npm run dev` — runs `dev` in every workspace that defines it.
-- `npm run build` — builds all workspaces.
-- `npm run test` — executes test suites across the monorepo.
+- `npm run build:api` / `npm run build:ui` — build just one surface.
+- `npm run build` — build every workspace.
+- `npm run test:api` / `npm run test:ui` — run tests per surface.
+- `npm run test` — execute all available test suites.
+- `npm --workspace apps/api run deploy` — deploy the Serverless stack to AWS (see API README).
 
 ## Notes
-- Existing DynamoDB/local development instructions for the API now live in `apps/api/README.md`.
-- After restructuring, regenerate lockfiles by running `npm install` at the root (creates a workspace-aware `package-lock.json`).
+- Detailed backend instructions live in `apps/api/README.md`.
+- UI-specific information, including environment variables and hosting guidance, is documented in `apps/ui/README.md`.
+- After restructuring, regenerate the lockfile by running `npm install` at the root (creates a workspace-aware `package-lock.json`).
