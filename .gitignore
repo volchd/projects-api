@@ -1,5 +1,11 @@
-node_modules/
-dist/
-.serverless/
-.esbuild/
 .DS_Store
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.serverless/
+**/.serverless/
+.esbuild/
+**/.esbuild/
+*.log
+apps/ui/.vite
