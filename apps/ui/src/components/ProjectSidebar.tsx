@@ -56,17 +56,24 @@ export const ProjectSidebar = ({
     <aside className="sidebar">
       <div className="sidebar__header">
         <span className="sidebar__logo">Collab</span>
-        <button type="button" className="sidebar__new-project" onClick={onCreateProject}>
-          <span className="sidebar__new-project-plus">+</span>
-          New project
-        </button>
       </div>
 
       <div className="sidebar__section">
-        <span className="sidebar__section-title">
-          Projects
-          {projectCountLabel && <span className="sidebar__section-count">({projectCountLabel})</span>}
-        </span>
+        <div className="sidebar__section-header">
+          <span className="sidebar__section-title">
+            Projects
+            {projectCountLabel && <span className="sidebar__section-count">({projectCountLabel})</span>}
+          </span>
+          <button
+            type="button"
+            className="sidebar__section-add"
+            onClick={onCreateProject}
+            aria-label="Create project"
+          >
+            <span aria-hidden="true">+</span>
+            <span className="sr-only">Create project</span>
+          </button>
+        </div>
         {metaLabel && (
           <p className={error ? 'sidebar__meta sidebar__meta--error' : 'sidebar__meta'}>{metaLabel}</p>
         )}
