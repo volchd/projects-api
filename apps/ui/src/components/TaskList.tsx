@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
 import { TASK_STATUS_OPTIONS } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
@@ -34,6 +35,8 @@ export const TaskList = ({
 }: TaskListProps) => {
   const [activeCreateStatus, setActiveCreateStatus] = useState<TaskStatus | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
   const tasksByStatus = useMemo(() => {
     const grouped = TASK_STATUS_OPTIONS.reduce<Record<TaskStatus, Task[]>>(
@@ -48,6 +51,13 @@ export const TaskList = ({
       acc[task.status].push(task);
       return acc;
     }, grouped);
+  }, [tasks]);
+
+  const tasksById = useMemo(() => {
+    return tasks.reduce<Record<string, Task>>((acc, task) => {
+      acc[task.taskId] = task;
+      return acc;
+    }, {});
   }, [tasks]);
 
   useEffect(() => {
@@ -88,6 +98,74 @@ export const TaskList = ({
 
   const isCreating = (status: TaskStatus) => creatingStatus === status;
 
+  const handleDragStart = useCallback((event: ReactDragEvent<HTMLElement>, taskId: string) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', taskId);
+    setDraggingTaskId(taskId);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingTaskId(null);
+    setDragOverStatus(null);
+  }, []);
+
+  const handleSectionDragOver = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (dragOverStatus !== status) {
+        setDragOverStatus(status);
+      }
+    },
+    [dragOverStatus, draggingTaskId],
+  );
+
+  const handleSectionDragLeave = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) {
+        return;
+      }
+      setDragOverStatus((current) => (current === status ? null : current));
+    },
+    [draggingTaskId],
+  );
+
+  const handleDrop = useCallback(
+    async (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+
+      event.preventDefault();
+      setDragOverStatus(null);
+
+      const task = tasksById[draggingTaskId];
+      setDraggingTaskId(null);
+
+      if (!task || task.status === status) {
+        return;
+      }
+
+      try {
+        await onUpdateTask(task.taskId, {
+          name: task.name,
+          description: task.description,
+          status,
+        });
+      } catch {
+        // Errors surface via parent handlers.
+      }
+    },
+    [draggingTaskId, onUpdateTask, tasksById],
+  );
+
   return (
     <div className="list-view">
       {TASK_STATUS_OPTIONS.map((statusOption) => {
@@ -95,9 +173,13 @@ export const TaskList = ({
         const showLoading = isLoading && statusTasks.length === 0;
         const showError = Boolean(error) && statusTasks.length === 0;
         const showEmpty = !isLoading && !error && statusTasks.length === 0 && activeCreateStatus !== statusOption.key;
+        const isDragTarget = Boolean(draggingTaskId) && dragOverStatus === statusOption.key;
 
         return (
-          <section className="list-view__section" key={statusOption.key}>
+          <section
+            className={`list-view__section${isDragTarget ? ' list-view__section--droppable' : ''}`}
+            key={statusOption.key}
+          >
             <header className="list-view__section-header">
               <div className="list-view__section-title">
                 <h2>{statusOption.label}</h2>
@@ -118,7 +200,13 @@ export const TaskList = ({
                 </button>
               )}
             </header>
-            <div className="list-view__body">
+            <div
+              className={`list-view__body${isDragTarget ? ' list-view__body--droppable' : ''}`}
+              onDragOver={(event) => handleSectionDragOver(event, statusOption.key)}
+              onDragEnter={(event) => handleSectionDragOver(event, statusOption.key)}
+              onDragLeave={(event) => handleSectionDragLeave(event, statusOption.key)}
+              onDrop={(event) => handleDrop(event, statusOption.key)}
+            >
               {activeCreateStatus === statusOption.key ? (
                 <TaskEditor
                   mode="create"
@@ -155,7 +243,16 @@ export const TaskList = ({
                     }}
                   />
                 ) : (
-                  <article className="task-card task-card--list" key={task.taskId}>
+                  <article
+                    className={`task-card task-card--list${
+                      draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
+                    }`}
+                    key={task.taskId}
+                    draggable
+                    onDragStart={(event) => handleDragStart(event, task.taskId)}
+                    onDragEnd={handleDragEnd}
+                    aria-grabbed={draggingTaskId === task.taskId}
+                  >
                     <header>
                       <h3>{task.name}</h3>
                       <button
