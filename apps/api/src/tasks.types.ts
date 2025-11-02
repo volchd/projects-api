@@ -28,4 +28,5 @@ export interface CreateTaskPayload {
 export interface UpdateTaskPayload {
   name?: string;
   description?: string | null;
+  status?: TaskStatus;
 }

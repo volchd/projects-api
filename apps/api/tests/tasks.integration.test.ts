@@ -71,6 +71,7 @@ interface TaskRecord {
   taskId: string;
   name: string;
   description: string | null;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -341,6 +342,7 @@ describe('tasks integration', () => {
         body: JSON.stringify({
           name: 'Updated task name',
           description: 'Updated description',
+          status: 'COMPLETE',
         }),
       }),
     );
@@ -353,6 +355,7 @@ describe('tasks integration', () => {
       taskId: task.taskId,
       name: 'Updated task name',
       description: 'Updated description',
+      status: 'COMPLETE',
     });
     expect(typeof updated.createdAt).toBe('string');
     expect(typeof updated.updatedAt).toBe('string');

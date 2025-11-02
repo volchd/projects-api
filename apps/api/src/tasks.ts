@@ -122,6 +122,14 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
     }
   }
 
+  if ('status' in data) {
+    if (isTaskStatus(data.status)) {
+      result.status = data.status;
+    } else {
+      errors.push('status must be a valid status if provided');
+    }
+  }
+
   if (errors.length) {
     return { errors };
   }
@@ -352,6 +360,12 @@ export const update = async (
       names.push('#d = :desc');
       exprNames['#d'] = 'description';
       exprValues[':desc'] = description;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'status') && value.status) {
+      names.push('#s = :status');
+      exprNames['#s'] = 'status';
+      exprValues[':status'] = value.status;
     }
 
     if (names.length === 0) {

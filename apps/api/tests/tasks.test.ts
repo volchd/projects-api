@@ -380,13 +380,14 @@ describe('update', () => {
     const response = await update(
       baseEvent({
         pathParameters: { projectId: 'project-1', taskId: 'task-1' },
-        body: JSON.stringify({ description: 123 }),
+        body: JSON.stringify({ description: 123, status: 'invalid' }),
       }),
     );
 
     expect(response.statusCode).toBe(400);
     expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
       'description must be a string or null if provided',
+      'status must be a valid status if provided',
     ]);
   });
 
@@ -425,6 +426,7 @@ describe('update', () => {
         userId: 'demo-user',
         name: 'Updated name',
         description: 'Updated description',
+        status: 'IN PROGRESS',
         createdAt: '2024-01-01T00:00:00.000Z',
         updatedAt: '2024-01-01T00:00:00.000Z',
       },
@@ -433,7 +435,11 @@ describe('update', () => {
     const response = await update(
       baseEvent({
         pathParameters: { projectId: 'project-1', taskId: 'task-1' },
-        body: JSON.stringify({ name: 'Updated name', description: 'Updated description' }),
+        body: JSON.stringify({
+          name: 'Updated name',
+          description: 'Updated description',
+          status: 'IN PROGRESS',
+        }),
       }),
     );
 
@@ -443,7 +449,7 @@ describe('update', () => {
       taskId: 'task-1',
       name: 'Updated name',
       description: 'Updated description',
-      status: 'TODO',
+      status: 'IN PROGRESS',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -458,6 +464,7 @@ describe('update', () => {
     expect(command.input.ExpressionAttributeNames).toMatchObject({
       '#n': 'name',
       '#d': 'description',
+      '#s': 'status',
       '#u': 'updatedAt',
     });
 
@@ -466,6 +473,7 @@ describe('update', () => {
       ':name': 'Updated name',
       ':desc': 'Updated description',
       ':user': 'demo-user',
+      ':status': 'IN PROGRESS',
     });
     expect(typeof values[':updatedAt']).toBe('string');
   });

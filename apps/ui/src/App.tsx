@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { useProjects } from './hooks/useProjects';
 import { useTasks } from './hooks/useTasks';
@@ -7,7 +7,7 @@ import { ProjectForm } from './components/ProjectForm';
 import { TaskBoard } from './components/TaskBoard';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Topbar } from './components/Topbar';
-import type { Project } from './types';
+import type { Project, Task, TaskStatus } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
 
@@ -30,6 +30,8 @@ function App() {
   const [formError, setFormError] = useState<string | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
   const [pendingDeleteProject, setPendingDeleteProject] = useState<Project | null>(null);
+  const [pendingDeleteTask, setPendingDeleteTask] = useState<Task | null>(null);
+  const taskDeletePromiseRef = useRef<{ resolve: () => void; reject: (reason?: unknown) => void } | null>(null);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => a.name.localeCompare(b.name));
@@ -59,6 +61,12 @@ function App() {
     isLoading: tasksLoading,
     error: tasksError,
     hasProject,
+    creatingStatus: creatingTaskStatus,
+    updatingTaskId,
+    deletingTaskId,
+    createTask,
+    updateTask,
+    deleteTask,
   } = useTasks(selectedProjectId);
 
   const resetErrors = useCallback(() => {
@@ -175,6 +183,91 @@ function App() {
     setPendingDeleteProject(null);
   }, [deletingProjectId]);
 
+  const handleTaskCreate = useCallback(
+    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+      try {
+        setBoardError(null);
+        await createTask({
+          name: values.name,
+          description: values.description,
+          status: values.status,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setBoardError(message);
+        throw err;
+      }
+    },
+    [createTask],
+  );
+
+  const handleTaskUpdate = useCallback(
+    async (taskId: string, values: { name: string; description: string | null; status: TaskStatus }) => {
+      try {
+        setBoardError(null);
+        await updateTask(taskId, {
+          name: values.name,
+          description: values.description,
+          status: values.status,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setBoardError(message);
+        throw err;
+      }
+    },
+    [updateTask],
+  );
+
+  const handleTaskDeleteRequest = useCallback(
+    (taskId: string) => {
+      const task = tasks.find((item) => item.taskId === taskId);
+      if (!task) {
+        return Promise.resolve();
+      }
+
+      setBoardError(null);
+      setPendingDeleteTask(task);
+
+      if (taskDeletePromiseRef.current) {
+        taskDeletePromiseRef.current.reject(new Error('Replaced'));
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        taskDeletePromiseRef.current = { resolve, reject };
+      });
+    },
+    [tasks],
+  );
+
+  const handleTaskDeleteConfirm = useCallback(async () => {
+    if (!pendingDeleteTask) {
+      return;
+    }
+
+    try {
+      setBoardError(null);
+      await deleteTask(pendingDeleteTask.taskId);
+      taskDeletePromiseRef.current?.resolve();
+      setPendingDeleteTask(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+      setBoardError(message);
+      taskDeletePromiseRef.current?.reject(err);
+    } finally {
+      taskDeletePromiseRef.current = null;
+    }
+  }, [deleteTask, pendingDeleteTask]);
+
+  const handleTaskDeleteCancel = useCallback(() => {
+    if (pendingDeleteTask && deletingTaskId === pendingDeleteTask.taskId) {
+      return;
+    }
+    taskDeletePromiseRef.current?.reject(new Error('Cancelled'));
+    taskDeletePromiseRef.current = null;
+    setPendingDeleteTask(null);
+  }, [deletingTaskId, pendingDeleteTask]);
+
   const isUpdatingSelected =
     selectedProject && updatingProjectId === selectedProject.id && projectFormMode === 'edit';
 
@@ -239,10 +332,37 @@ function App() {
           ) : null}
 
           {projectFormMode === null && hasProject ? (
-            <TaskBoard tasks={tasks} isLoading={tasksLoading} error={tasksError} />
+            <TaskBoard
+              key={selectedProjectId ?? 'no-project'}
+              tasks={tasks}
+              isLoading={tasksLoading}
+              error={tasksError}
+              creatingStatus={creatingTaskStatus}
+              updatingTaskId={updatingTaskId}
+              deletingTaskId={deletingTaskId}
+              onCreateTask={handleTaskCreate}
+              onUpdateTask={handleTaskUpdate}
+              onDeleteTask={handleTaskDeleteRequest}
+            />
           ) : null}
         </section>
       </main>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteTask)}
+        title="Delete task"
+        description={
+          pendingDeleteTask
+            ? `Are you sure you want to delete “${pendingDeleteTask.name}”? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete task"
+        isConfirming={
+          pendingDeleteTask ? deletingTaskId === pendingDeleteTask.taskId : false
+        }
+        onConfirm={handleTaskDeleteConfirm}
+        onCancel={handleTaskDeleteCancel}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDeleteProject)}

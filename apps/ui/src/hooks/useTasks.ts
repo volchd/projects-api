@@ -1,63 +1,99 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { Task } from '../types';
-import { fetchTasks as apiFetchTasks } from '../api/tasks';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Task, TaskStatus } from '../types';
+import {
+  createTask as apiCreateTask,
+  deleteTask as apiDeleteTask,
+  fetchTasks as apiFetchTasks,
+  updateTask as apiUpdateTask,
+  type CreateTaskPayload,
+  type UpdateTaskPayload,
+} from '../api/tasks';
 
 const UNKNOWN_ERROR = 'Unknown error';
+const DEFAULT_STATUS: TaskStatus = 'TODO';
+
+type UseTasksState = {
+  tasks: Task[];
+  isLoading: boolean;
+  error: string | null;
+  creatingStatus: TaskStatus | null;
+  updatingTaskId: string | null;
+  deletingTaskId: string | null;
+};
 
 export const useTasks = (projectId: string | null) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<UseTasksState>({
+    tasks: [],
+    isLoading: false,
+    error: null,
+    creatingStatus: null,
+    updatingTaskId: null,
+    deletingTaskId: null,
+  });
+  const projectIdRef = useRef<string | null>(projectId);
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const setPartialState = useCallback((partial: Partial<UseTasksState>) => {
+    if (!isMountedRef.current) {
+      return;
+    }
+    setState((previous) => ({ ...previous, ...partial }));
+  }, []);
+
+  useEffect(() => {
+    projectIdRef.current = projectId;
+  }, [projectId]);
 
   const refresh = useCallback(
     async (overrideProjectId?: string) => {
-      const currentProjectId = overrideProjectId ?? projectId;
+      const currentProjectId = overrideProjectId ?? projectIdRef.current;
       if (!currentProjectId) {
-        setTasks([]);
-        setError(null);
+        setPartialState({ tasks: [], error: null });
         return [];
       }
 
       try {
         const items = await apiFetchTasks(currentProjectId);
-        setTasks(items);
-        setError(null);
+        setPartialState({ tasks: items, error: null });
         return items;
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
-        setTasks([]);
-        setError(message);
+        setPartialState({ tasks: [], error: message });
         throw err;
       }
     },
-    [projectId],
+    [setPartialState],
   );
 
   useEffect(() => {
     if (!projectId) {
-      setTasks([]);
-      setError(null);
+      setPartialState({ tasks: [], error: null, isLoading: false });
       return;
     }
 
     let cancelled = false;
     const load = async () => {
-      setIsLoading(true);
-      setError(null);
+      setPartialState({ isLoading: true, error: null });
       try {
         const items = await apiFetchTasks(projectId);
         if (!cancelled) {
-          setTasks(items);
+          setPartialState({ tasks: items });
         }
       } catch (err) {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
-          setError(message);
-          setTasks([]);
+          setPartialState({ error: message, tasks: [] });
         }
       } finally {
         if (!cancelled) {
-          setIsLoading(false);
+          setPartialState({ isLoading: false });
         }
       }
     };
@@ -66,13 +102,82 @@ export const useTasks = (projectId: string | null) => {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, setPartialState]);
+
+  const ensureProject = useCallback(() => {
+    const current = projectIdRef.current;
+    if (!current) {
+      throw new Error('Select a project before managing tasks');
+    }
+    return current;
+  }, []);
+
+  const createTask = useCallback(
+    async (payload: CreateTaskPayload & { status?: TaskStatus }) => {
+      const currentProjectId = ensureProject();
+      const targetStatus = payload.status ?? DEFAULT_STATUS;
+      setPartialState({ creatingStatus: targetStatus });
+
+      try {
+        const created = await apiCreateTask(currentProjectId, {
+          name: payload.name,
+          description: payload.description,
+        });
+
+        let latestTask: Task | null = created;
+
+        if (payload.status && payload.status !== created.status) {
+          latestTask = await apiUpdateTask(currentProjectId, created.taskId, {
+            status: payload.status,
+          });
+        }
+
+        const items = await refresh(currentProjectId);
+        return latestTask ?? items.find((task) => task.taskId === created.taskId) ?? null;
+      } finally {
+        setPartialState({ creatingStatus: null });
+      }
+    },
+    [ensureProject, refresh, setPartialState],
+  );
+
+  const updateTask = useCallback(
+    async (taskId: string, payload: UpdateTaskPayload) => {
+      const currentProjectId = ensureProject();
+      setPartialState({ updatingTaskId: taskId });
+
+      try {
+        const updated = await apiUpdateTask(currentProjectId, taskId, payload);
+        await refresh(currentProjectId);
+        return updated;
+      } finally {
+        setPartialState({ updatingTaskId: null });
+      }
+    },
+    [ensureProject, refresh, setPartialState],
+  );
+
+  const deleteTask = useCallback(
+    async (taskId: string) => {
+      const currentProjectId = ensureProject();
+      setPartialState({ deletingTaskId: taskId });
+
+      try {
+        await apiDeleteTask(currentProjectId, taskId);
+        await refresh(currentProjectId);
+      } finally {
+        setPartialState({ deletingTaskId: null });
+      }
+    },
+    [ensureProject, refresh, setPartialState],
+  );
 
   return {
-    tasks,
-    isLoading,
-    error,
+    ...state,
     refresh,
     hasProject: Boolean(projectId),
+    createTask,
+    updateTask,
+    deleteTask,
   };
 };
