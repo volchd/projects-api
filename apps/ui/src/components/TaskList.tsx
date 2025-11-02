@@ -63,13 +63,19 @@ export const TaskList = ({
       return acc;
     }, {} as Record<TaskStatus, Task[]>);
 
-    return tasks.reduce<Record<TaskStatus, Task[]>>((acc, task) => {
+    const withTasks = tasks.reduce<Record<TaskStatus, Task[]>>((acc, task) => {
       if (!acc[task.status]) {
         acc[task.status] = [];
       }
       acc[task.status].push(task);
       return acc;
     }, grouped);
+
+    for (const statusTasks of Object.values(withTasks)) {
+      statusTasks.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    }
+
+    return withTasks;
   }, [orderedStatuses, tasks]);
 
   const tasksById = useMemo(() => {
