@@ -38,6 +38,8 @@ export const updateProject = async (projectId: string, payload: ProjectPayload) 
   if (!response.ok) {
     await parseError(response, 'Failed to update project');
   }
+
+  return (await response.json()) as Project;
 };
 
 export const deleteProject = async (projectId: string) => {
@@ -48,4 +50,18 @@ export const deleteProject = async (projectId: string) => {
   if (!response.ok) {
     await parseError(response, 'Failed to delete project');
   }
+};
+
+export const updateProjectStatuses = async (projectId: string, statuses: string[]) => {
+  const response = await fetch(apiUrl(`/projects/${projectId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ statuses }),
+  });
+
+  if (!response.ok) {
+    await parseError(response, 'Failed to update project statuses');
+  }
+
+  return (await response.json()) as Project;
 };

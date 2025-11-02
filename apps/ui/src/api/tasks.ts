@@ -4,6 +4,7 @@ import type { Task, TaskStatus } from '../types';
 export type CreateTaskPayload = {
   name: string;
   description: string | null;
+  status?: TaskStatus;
 };
 
 export type UpdateTaskPayload = {
@@ -29,6 +30,7 @@ export const createTask = async (projectId: string, payload: CreateTaskPayload) 
     body: JSON.stringify({
       name: payload.name,
       description: payload.description,
+      status: payload.status,
     }),
   });
 

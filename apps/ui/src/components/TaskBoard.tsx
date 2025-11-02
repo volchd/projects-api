@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
-import { TASK_STATUS_OPTIONS } from '../constants/taskStatusOptions';
+import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
 type TaskEditorValues = {
@@ -12,46 +12,72 @@ type TaskEditorValues = {
 
 type TaskBoardProps = {
   tasks: Task[];
+  statuses: readonly TaskStatus[];
   isLoading: boolean;
   error: string | null;
   creatingStatus: TaskStatus | null;
   updatingTaskId: string | null;
   deletingTaskId: string | null;
+  isUpdatingStatuses: boolean;
   onCreateTask: (values: TaskEditorValues) => Promise<void>;
   onUpdateTask: (taskId: string, values: TaskEditorValues) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
+  onAddStatus: (status: string) => Promise<void>;
 };
 
 export const TaskBoard = ({
   tasks,
+  statuses,
   isLoading,
   error,
   creatingStatus,
   updatingTaskId,
   deletingTaskId,
+  isUpdatingStatuses,
   onCreateTask,
   onUpdateTask,
   onDeleteTask,
+  onAddStatus,
 }: TaskBoardProps) => {
   const [activeCreateStatus, setActiveCreateStatus] = useState<TaskStatus | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
+  const [isAddingStatus, setIsAddingStatus] = useState(false);
+  const [newStatusName, setNewStatusName] = useState('');
+  const [addStatusError, setAddStatusError] = useState<string | null>(null);
+
+  const orderedStatuses = useMemo(() => {
+    const base = (statuses.length ? [...statuses] : [...DEFAULT_TASK_STATUSES]) as TaskStatus[];
+    const seen = new Set(base.map((status) => status.toLowerCase()));
+
+    for (const task of tasks) {
+      const key = task.status.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        base.push(task.status);
+      }
+    }
+
+    return base;
+  }, [statuses, tasks]);
+
+  const statusOptions = useMemo(() => toStatusOptions(orderedStatuses), [orderedStatuses]);
 
   const tasksByStatus = useMemo(() => {
-    const base = TASK_STATUS_OPTIONS.reduce<Record<TaskStatus, Task[]>>(
-      (acc, option) => {
-        acc[option.key] = [];
-        return acc;
-      },
-      {} as Record<TaskStatus, Task[]>,
-    );
+    const base = orderedStatuses.reduce<Record<TaskStatus, Task[]>>((acc, status) => {
+      acc[status] = [];
+      return acc;
+    }, {} as Record<TaskStatus, Task[]>);
 
     return tasks.reduce<Record<TaskStatus, Task[]>>((acc, task) => {
+      if (!acc[task.status]) {
+        acc[task.status] = [];
+      }
       acc[task.status].push(task);
       return acc;
     }, base);
-  }, [tasks]);
+  }, [orderedStatuses, tasks]);
 
   const tasksById = useMemo(() => {
     return tasks.reduce<Record<string, Task>>((acc, task) => {
@@ -68,6 +94,18 @@ export const TaskBoard = ({
       setEditingTaskId(null);
     }
   }, [editingTaskId, tasks]);
+
+  useEffect(() => {
+    if (activeCreateStatus && !orderedStatuses.includes(activeCreateStatus)) {
+      setActiveCreateStatus(null);
+    }
+  }, [activeCreateStatus, orderedStatuses]);
+
+  useEffect(() => {
+    if (dragOverStatus && !orderedStatuses.includes(dragOverStatus)) {
+      setDragOverStatus(null);
+    }
+  }, [dragOverStatus, orderedStatuses]);
 
   const handleCreateSubmit = async (values: TaskEditorValues) => {
     try {
@@ -97,6 +135,55 @@ export const TaskBoard = ({
   };
 
   const isCreating = (status: TaskStatus) => creatingStatus === status;
+
+  const normalizeStatusName = useCallback((value: string) => value.trim().replace(/\s+/g, ' ').toUpperCase(), []);
+
+  const handleStartAddStatus = useCallback(() => {
+    setIsAddingStatus(true);
+    setNewStatusName('');
+    setAddStatusError(null);
+  }, []);
+
+  const handleCancelAddStatus = useCallback(() => {
+    if (isUpdatingStatuses) {
+      return;
+    }
+    setIsAddingStatus(false);
+    setNewStatusName('');
+    setAddStatusError(null);
+  }, [isUpdatingStatuses]);
+
+  const handleAddStatusSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isUpdatingStatuses) {
+        return;
+      }
+
+      const normalized = normalizeStatusName(newStatusName);
+      if (!normalized) {
+        setAddStatusError('Enter a status name');
+        return;
+      }
+
+      const normalizedKey = normalized.toLowerCase();
+      if (orderedStatuses.some((status) => status.toLowerCase() === normalizedKey)) {
+        setAddStatusError('That status already exists');
+        return;
+      }
+
+      try {
+        await onAddStatus(normalized);
+        setIsAddingStatus(false);
+        setNewStatusName('');
+        setAddStatusError(null);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to add status';
+        setAddStatusError(message);
+      }
+    },
+    [isUpdatingStatuses, newStatusName, normalizeStatusName, onAddStatus, orderedStatuses],
+  );
 
   const handleDragStart = useCallback((event: ReactDragEvent<HTMLElement>, taskId: string) => {
     event.dataTransfer.effectAllowed = 'move';
@@ -168,8 +255,8 @@ export const TaskBoard = ({
 
   return (
     <div className="board__columns">
-      {TASK_STATUS_OPTIONS.map((column) => {
-        const columnTasks = tasksByStatus[column.key];
+      {statusOptions.map((column) => {
+        const columnTasks = tasksByStatus[column.key] ?? [];
         const showEmptyState =
           columnTasks.length === 0 && activeCreateStatus !== column.key && !isLoading && !error;
         const showLoadingState = isLoading && columnTasks.length === 0;
@@ -197,7 +284,7 @@ export const TaskBoard = ({
                 <TaskEditor
                   mode="create"
                   status={column.key}
-                  statuses={TASK_STATUS_OPTIONS}
+                  statuses={statusOptions}
                   isSubmitting={isCreating(column.key)}
                   onSubmit={handleCreateSubmit}
                   onCancel={() => setActiveCreateStatus(null)}
@@ -216,7 +303,7 @@ export const TaskBoard = ({
                     key={task.taskId}
                     mode="edit"
                     status={task.status}
-                    statuses={TASK_STATUS_OPTIONS}
+                    statuses={statusOptions}
                     initialValues={{ name: task.name, description: task.description }}
                     isSubmitting={updatingTaskId === task.taskId}
                     isDeleting={deletingTaskId === task.taskId}
@@ -279,6 +366,48 @@ export const TaskBoard = ({
           </div>
         );
       })}
+      <div className="board__column board__column--add-status">
+        {isAddingStatus ? (
+          <form className="board__add-status-form" onSubmit={handleAddStatusSubmit}>
+            <input
+              type="text"
+              value={newStatusName}
+              onChange={(event) => {
+                setNewStatusName(event.target.value);
+                if (addStatusError) {
+                  setAddStatusError(null);
+                }
+              }}
+              placeholder="Status name"
+              aria-label="Status name"
+              disabled={isUpdatingStatuses}
+            />
+            {addStatusError ? (
+              <div className="board__add-status-error" role="alert">
+                {addStatusError}
+              </div>
+            ) : null}
+            <div className="board__add-status-actions">
+              <button type="submit" disabled={isUpdatingStatuses || !newStatusName.trim()}>
+                {isUpdatingStatuses ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" onClick={handleCancelAddStatus} disabled={isUpdatingStatuses}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            type="button"
+            className="board__add-status-trigger"
+            onClick={handleStartAddStatus}
+            disabled={isUpdatingStatuses}
+          >
+            <span aria-hidden="true">+</span>
+            Add status
+          </button>
+        )}
+      </div>
     </div>
   );
 };

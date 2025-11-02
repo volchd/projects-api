@@ -175,6 +175,25 @@ describe('projects integration', () => {
     expect(deleteResponse.statusCode).toBe(204);
   });
 
+  it('creates a project with custom statuses', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const { statusCode, project } = await createProject({
+      statuses: [' backlog ', 'In QA', 'done'],
+    });
+
+    expect(statusCode).toBe(201);
+    expect(project.statuses).toEqual(['BACKLOG', 'IN QA', 'DONE']);
+
+    await remove(
+      baseEvent({
+        pathParameters: { id: project.id },
+      }),
+    );
+  });
+
   describe('with an existing project', () => {
     let project: ProjectRecord | undefined;
 
@@ -233,7 +252,7 @@ describe('projects integration', () => {
         userId: project!.userId,
         name: 'Existing Project',
         description: project!.description,
-        statuses: DEFAULT_PROJECT_STATUSES,
+        statuses: project!.statuses,
       });
     });
 
@@ -256,8 +275,8 @@ describe('projects integration', () => {
             item.name === project!.name &&
             item.description === project!.description &&
             Array.isArray(item.statuses) &&
-            item.statuses.length === DEFAULT_PROJECT_STATUSES.length &&
-            item.statuses.every((status, index) => status === DEFAULT_PROJECT_STATUSES[index]),
+            item.statuses.length === project!.statuses.length &&
+            item.statuses.every((status, index) => status === project!.statuses[index]),
         ),
       ).toBe(true);
     });
@@ -280,10 +299,69 @@ describe('projects integration', () => {
       expect(updated).toMatchObject({
         id: project!.id,
         description: 'Updated description',
-        statuses: DEFAULT_PROJECT_STATUSES,
+        statuses: project!.statuses,
       });
 
       project = { ...project!, description: 'Updated description' };
+    });
+
+    it('updates project statuses', async () => {
+      if (!dynamoAvailable) {
+        return;
+      }
+
+      const updateResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ statuses: ['Planning', ' In QA ', 'released'] }),
+        }),
+      );
+
+      expect(updateResponse.statusCode).toBe(200);
+      const updated = parseBody<ProjectRecord>(updateResponse.body);
+      expect(updated.statuses).toEqual(['PLANNING', 'IN QA', 'RELEASED']);
+
+      const getResponse = await get(
+        baseEvent({
+          pathParameters: { id: project!.id },
+        }),
+      );
+
+      expect(getResponse.statusCode).toBe(200);
+      const fetched = parseBody<ProjectRecord>(getResponse.body);
+      expect(fetched.statuses).toEqual(['PLANNING', 'IN QA', 'RELEASED']);
+
+      project = { ...project!, statuses: fetched.statuses };
+    });
+
+    it('rejects invalid project statuses', async () => {
+      if (!dynamoAvailable) {
+        return;
+      }
+
+      const duplicateResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ statuses: ['todo', 'TODO'] }),
+        }),
+      );
+
+      expect(duplicateResponse.statusCode).toBe(400);
+      expect(parseBody<{ errors: string[] }>(duplicateResponse.body).errors).toContain(
+        'statuses must contain unique values',
+      );
+
+      const emptyResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ statuses: [] }),
+        }),
+      );
+
+      expect(emptyResponse.statusCode).toBe(400);
+      expect(parseBody<{ errors: string[] }>(emptyResponse.body).errors).toContain(
+        'statuses must include at least one value',
+      );
     });
 
     it('deletes a project', async () => {

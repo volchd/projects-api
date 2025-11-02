@@ -11,13 +11,14 @@ import { Topbar } from './components/Topbar';
 import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
-import { TASK_STATUS_OPTIONS } from './constants/taskStatusOptions';
+import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
 import type { Project, Task, TaskStatus } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
 type TaskView = 'board' | 'list';
 
 const UNKNOWN_ERROR = 'Unknown error';
+const EMPTY_STATUSES: TaskStatus[] = [];
 
 function App() {
   const {
@@ -30,6 +31,7 @@ function App() {
     createProject,
     updateProject,
     deleteProject,
+    updateProjectStatuses,
   } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projectFormMode, setProjectFormMode] = useState<ProjectFormMode>(null);
@@ -51,6 +53,12 @@ function App() {
   const selectedProject = useMemo(
     () => sortedProjects.find((project) => project.id === selectedProjectId) ?? null,
     [sortedProjects, selectedProjectId],
+  );
+  const activeStatuses = selectedProject?.statuses ?? EMPTY_STATUSES;
+  const defaultModalStatus = activeStatuses[0] ?? DEFAULT_TASK_STATUSES[0];
+  const statusOptionsForModal = useMemo(
+    () => toStatusOptions(activeStatuses.length ? activeStatuses : DEFAULT_TASK_STATUSES),
+    [activeStatuses],
   );
 
   useEffect(() => {
@@ -99,7 +107,7 @@ function App() {
     createTask,
     updateTask,
     deleteTask,
-  } = useTasks(selectedProjectId);
+  } = useTasks(selectedProjectId, activeStatuses);
 
   const commandItems = useMemo(
     () => [
@@ -187,6 +195,36 @@ function App() {
     setTaskModalOpen(false);
     setTaskModalError(null);
   }, [taskModalSubmitting]);
+
+  const handleAddStatus = useCallback(
+    async (status: string) => {
+      if (!selectedProject) {
+        throw new Error('Select a project before adding statuses');
+      }
+
+      const normalized = status.trim().replace(/\s+/g, ' ').toUpperCase();
+      if (!normalized) {
+        throw new Error('Enter a status name');
+      }
+
+      const exists = selectedProject.statuses.some(
+        (current) => current.toLowerCase() === normalized.toLowerCase(),
+      );
+      if (exists) {
+        throw new Error('That status already exists');
+      }
+
+      try {
+        setBoardError(null);
+        await updateProjectStatuses(selectedProject.id, [...selectedProject.statuses, normalized]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setBoardError(message);
+        throw new Error(message);
+      }
+    },
+    [selectedProject, updateProjectStatuses],
+  );
 
   const handleCreateSubmit = useCallback(
     async ({ name, description }: { name: string; description: string }) => {
@@ -386,6 +424,8 @@ function App() {
     setTaskView(view);
   }, [setTaskView]);
 
+  const isUpdatingSelectedProject = Boolean(selectedProject && updatingProjectId === selectedProject.id);
+
   const isUpdatingSelected =
     selectedProject && updatingProjectId === selectedProject.id && projectFormMode === 'edit';
   const projectFormSubmitting =
@@ -440,19 +480,23 @@ function App() {
               <TaskBoard
                 key={`${selectedProjectId ?? 'no-project'}-board`}
                 tasks={tasks}
+                statuses={activeStatuses}
                 isLoading={tasksLoading}
                 error={tasksError}
                 creatingStatus={creatingTaskStatus}
                 updatingTaskId={updatingTaskId}
                 deletingTaskId={deletingTaskId}
+                isUpdatingStatuses={isUpdatingSelectedProject}
                 onCreateTask={handleTaskCreate}
                 onUpdateTask={handleTaskUpdate}
                 onDeleteTask={handleTaskDeleteRequest}
+                onAddStatus={handleAddStatus}
               />
             ) : (
               <TaskList
                 key={`${selectedProjectId ?? 'no-project'}-list`}
                 tasks={tasks}
+                statuses={activeStatuses}
                 isLoading={tasksLoading}
                 error={tasksError}
                 creatingStatus={creatingTaskStatus}
@@ -544,8 +588,8 @@ function App() {
       >
         <TaskEditor
           mode="create"
-          status="TODO"
-          statuses={TASK_STATUS_OPTIONS}
+          status={defaultModalStatus}
+          statuses={statusOptionsForModal}
           isSubmitting={taskModalSubmitting}
           error={taskModalError}
           onSubmit={handleTaskModalSubmit}

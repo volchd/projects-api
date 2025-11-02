@@ -127,6 +127,29 @@ describe('create', () => {
     });
   });
 
+  it('accepts custom statuses on create', async () => {
+    sendMock.mockResolvedValueOnce({});
+    randomUUIDMock.mockReturnValueOnce('project-custom-status');
+
+    const response = await create(
+      baseEvent({
+        body: JSON.stringify({ name: 'With statuses', statuses: [' backlog', 'In QA'] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
+      id: 'project-custom-status',
+      userId: 'demo-user',
+      name: 'With statuses',
+      description: null,
+      statuses: ['BACKLOG', 'IN QA'],
+    });
+
+    const command = sendMock.mock.calls[0][0] as PutCommand;
+    expect(command.input.Item?.statuses).toEqual(['BACKLOG', 'IN QA']);
+  });
+
   it('returns 500 when DynamoDB call fails', async () => {
     sendMock.mockRejectedValueOnce(new Error('write failure'));
     randomUUIDMock.mockReturnValueOnce('project-uuid');
@@ -317,6 +340,52 @@ describe('update', () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it('validates statuses payload', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ statuses: 'not-an-array' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'statuses must be an array of non-empty strings if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid statuses entries', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ statuses: ['   ', null] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'statuses must contain non-empty strings up to 40 characters',
+      'statuses must include at least one value',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate statuses', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ statuses: ['Todo', 'TODO'] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'statuses must contain unique values',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('updates provided fields', async () => {
     sendMock.mockResolvedValueOnce({
       Attributes: {
@@ -352,10 +421,55 @@ describe('update', () => {
       TableName: 'ProjectsTable',
       Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
       ConditionExpression: 'attribute_exists(PK)',
-      UpdateExpression: 'SET #n = :name, #d = :desc',
-      ExpressionAttributeNames: { '#n': 'name', '#d': 'description' },
-      ExpressionAttributeValues: { ':name': 'Updated', ':desc': 'Changed' },
+      UpdateExpression: 'SET #n = :name, #d = :desc, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: { '#n': 'name', '#d': 'description', '#updatedAt': 'updatedAt' },
       ReturnValues: 'ALL_NEW',
+    });
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ':name': 'Updated',
+      ':desc': 'Changed',
+      ':updatedAt': expect.any(String),
+    });
+  });
+
+  it('updates statuses while preserving order', async () => {
+    sendMock.mockResolvedValueOnce({
+      Attributes: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        name: 'Existing',
+        description: null,
+        statuses: ['PLANNING', 'IN REVIEW', 'DONE'],
+      },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ statuses: [' planning ', 'IN  review', 'done'] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
+      id: 'project-1',
+      userId: 'demo-user',
+      name: 'Existing',
+      description: null,
+      statuses: ['PLANNING', 'IN REVIEW', 'DONE'],
+    });
+
+    const command = sendMock.mock.calls[0][0] as UpdateCommand;
+    expect(command).toBeInstanceOf(UpdateCommand);
+    expect(command.input).toMatchObject({
+      UpdateExpression: 'SET #s = :statuses, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: { '#s': 'statuses', '#updatedAt': 'updatedAt' },
+    });
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ':statuses': ['PLANNING', 'IN REVIEW', 'DONE'],
+      ':updatedAt': expect.any(String),
     });
   });
 
@@ -408,10 +522,11 @@ describe('update', () => {
     expect(command).toBeInstanceOf(UpdateCommand);
     expect(command.input.ExpressionAttributeValues).toMatchObject({
       ':desc': null,
+      ':updatedAt': expect.any(String),
     });
     expect(command.input).toMatchObject({
-      UpdateExpression: 'SET #d = :desc',
-      ExpressionAttributeNames: { '#d': 'description' },
+      UpdateExpression: 'SET #d = :desc, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: { '#d': 'description', '#updatedAt': 'updatedAt' },
     });
   });
 });

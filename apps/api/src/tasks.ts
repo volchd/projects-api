@@ -23,11 +23,9 @@ import {
   taskSk,
 } from './model';
 import { json } from './response';
-import type { ParsedBodyResult, ValidationResult } from './projects.types';
-import {
-  DEFAULT_TASK_STATUS,
-  isTaskStatus,
-} from './tasks.types';
+import type { ParsedBodyResult, ValidationResult, ProjectStatus } from './projects.types';
+import { DEFAULT_PROJECT_STATUSES, MAX_PROJECT_STATUS_LENGTH } from './projects.types';
+import { DEFAULT_TASK_STATUS } from './tasks.types';
 import type {
   CreateTaskPayload,
   Task,
@@ -62,6 +60,50 @@ const parseBody = (event: APIGatewayProxyEventV2): ParsedBodyResult => {
   }
 };
 
+const normalizeTaskStatus = (status: unknown): TaskStatus | null => {
+  if (typeof status !== 'string') {
+    return null;
+  }
+
+  const trimmed = status.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const collapsed = trimmed.replace(/\s+/g, ' ');
+  if (collapsed.length > MAX_PROJECT_STATUS_LENGTH) {
+    return null;
+  }
+
+  return collapsed.toUpperCase();
+};
+
+const coerceProjectStatuses = (value: unknown): ProjectStatus[] => {
+  if (!Array.isArray(value)) {
+    return [...DEFAULT_PROJECT_STATUSES];
+  }
+
+  const statuses: ProjectStatus[] = [];
+  const seen = new Set<string>();
+
+  for (const candidate of value) {
+    const normalized = normalizeTaskStatus(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    statuses.push(normalized);
+  }
+
+  return statuses.length ? statuses : [...DEFAULT_PROJECT_STATUSES];
+};
+
 function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayload> {
   const errors: string[] = [];
 
@@ -73,6 +115,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
   const data = payload as Record<string, unknown>;
   const name = data.name;
   const description = toStringOrNull(data.description);
+  let status: TaskStatus | undefined;
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -80,6 +123,15 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
 
   if ('description' in data && description === undefined) {
     errors.push('description must be a string if provided');
+  }
+
+  if ('status' in data) {
+    const normalizedStatus = normalizeTaskStatus(data.status);
+    if (!normalizedStatus) {
+      errors.push(`status must be a non-empty string up to ${MAX_PROJECT_STATUS_LENGTH} characters if provided`);
+    } else {
+      status = normalizedStatus;
+    }
   }
 
   if (errors.length) {
@@ -90,6 +142,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
     value: {
       name: name as string,
       description,
+      status,
     },
     errors,
   };
@@ -123,10 +176,11 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
   }
 
   if ('status' in data) {
-    if (isTaskStatus(data.status)) {
-      result.status = data.status;
+    const normalizedStatus = normalizeTaskStatus(data.status);
+    if (normalizedStatus) {
+      result.status = normalizedStatus;
     } else {
-      errors.push('status must be a valid status if provided');
+      errors.push(`status must be a non-empty string up to ${MAX_PROJECT_STATUS_LENGTH} characters if provided`);
     }
   }
 
@@ -150,7 +204,7 @@ const handleError = (error: unknown): APIGatewayProxyStructuredResultV2 => {
 const loadProjectForUser = async (
   projectId: string,
   userId: string,
-): Promise<boolean> => {
+): Promise<ProjectStatus[] | null> => {
   const res = await ddbDocClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
@@ -160,14 +214,22 @@ const loadProjectForUser = async (
 
   const item = res.Item as Record<string, unknown> | undefined;
   if (!item || item.SK !== PROJECT_SORT_KEY) {
-    return false;
+    return null;
   }
 
-  return String(item.userId) === userId;
+  if (String(item.userId) !== userId) {
+    return null;
+  }
+
+  return coerceProjectStatuses(item.statuses);
 };
 
-const toTaskStatus = (status: unknown): TaskStatus =>
-  isTaskStatus(status) ? status : DEFAULT_TASK_STATUS;
+const toTaskStatus = (status: unknown): TaskStatus => {
+  if (typeof status === 'string' && status.trim()) {
+    return status;
+  }
+  return DEFAULT_TASK_STATUS;
+};
 
 const toTask = (item: Record<string, unknown> | undefined): Task | undefined => {
   if (!item) {
@@ -209,9 +271,18 @@ export const create = async (
     }
 
     const userId = resolveUserId(event);
-    const projectExistsForUser = await loadProjectForUser(projectId, userId);
-    if (!projectExistsForUser) {
+    const projectStatuses = await loadProjectForUser(projectId, userId);
+    if (!projectStatuses) {
       return json(404, { message: 'Project not found' });
+    }
+
+    const fallbackStatus = projectStatuses[0] ?? DEFAULT_TASK_STATUS;
+    const targetStatus = value.status ?? fallbackStatus;
+
+    if (!projectStatuses.includes(targetStatus)) {
+      return json(400, {
+        errors: ['status must match one of the project statuses'],
+      });
     }
 
     const now = new Date().toISOString();
@@ -225,7 +296,7 @@ export const create = async (
       userId,
       name: value.name,
       description: value.description ?? null,
-      status: DEFAULT_TASK_STATUS,
+      status: targetStatus,
       createdAt: now,
       updatedAt: now,
       entityType: TASK_ENTITY_TYPE,
@@ -293,8 +364,8 @@ export const listByProject = async (
     }
 
     const userId = resolveUserId(event);
-    const projectExistsForUser = await loadProjectForUser(projectId, userId);
-    if (!projectExistsForUser) {
+    const projectStatuses = await loadProjectForUser(projectId, userId);
+    if (!projectStatuses) {
       return json(404, { message: 'Project not found' });
     }
 
@@ -342,10 +413,24 @@ export const update = async (
       return json(400, { errors });
     }
 
+    const userId = resolveUserId(event);
+    const projectStatuses = await loadProjectForUser(projectId, userId);
+    if (!projectStatuses) {
+      return json(404, { message: 'Project not found' });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'status') && value.status) {
+      if (!projectStatuses.includes(value.status)) {
+        return json(400, {
+          errors: ['status must match one of the project statuses'],
+        });
+      }
+    }
+
     const names: string[] = [];
     const exprNames: Record<string, string> = {};
     const exprValues: Record<string, NativeAttributeValue> = {
-      ':user': resolveUserId(event),
+      ':user': userId,
       ':updatedAt': new Date().toISOString(),
     };
 

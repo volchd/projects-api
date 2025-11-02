@@ -5,6 +5,7 @@ import {
   deleteProject as apiDeleteProject,
   fetchProjects as apiFetchProjects,
   updateProject as apiUpdateProject,
+  updateProjectStatuses as apiUpdateProjectStatuses,
   type ProjectPayload,
 } from '../api/projects';
 
@@ -115,6 +116,21 @@ export const useProjects = () => {
     [refresh, setPartialState],
   );
 
+  const updateProjectStatuses = useCallback(
+    async (projectId: string, statuses: string[]) => {
+      setPartialState({ updatingProjectId: projectId });
+      try {
+        await apiUpdateProjectStatuses(projectId, statuses);
+        await refresh();
+      } catch (err) {
+        throw err;
+      } finally {
+        setPartialState({ updatingProjectId: null });
+      }
+    },
+    [refresh, setPartialState],
+  );
+
   const deleteProject = useCallback(
     async (projectId: string) => {
       setPartialState({ deletingProjectId: projectId });
@@ -136,5 +152,6 @@ export const useProjects = () => {
     createProject,
     updateProject,
     deleteProject,
+    updateProjectStatuses,
   };
 };

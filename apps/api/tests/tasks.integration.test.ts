@@ -20,6 +20,7 @@ import { resolveUserId } from '../src/auth';
 import {
   create as createProjectHandler,
   remove as removeProjectHandler,
+  update as updateProjectHandler,
 } from '../src/projects';
 import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
 import {
@@ -259,6 +260,31 @@ describe('tasks integration', () => {
     createdTaskIds.push(task.taskId);
   });
 
+  it('creates a task with a custom status', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const updateResponse = await updateProjectHandler(
+      baseEvent({
+        pathParameters: { id: project!.id },
+        body: JSON.stringify({ statuses: ['BACKLOG', 'IN QA'] }),
+      }),
+    );
+    expect(updateResponse.statusCode).toBe(200);
+    project = parseBody<ProjectRecord>(updateResponse.body);
+    expect(project.statuses).toEqual(['BACKLOG', 'IN QA']);
+
+    const { statusCode, task } = await createTask(project.id, {
+      name: 'Review feature',
+      status: 'IN QA',
+    });
+
+    expect(statusCode).toBe(201);
+    expect(task.status).toBe('IN QA');
+    createdTaskIds.push(task.taskId);
+  });
+
   it('retrieves a task by id', async () => {
     if (!dynamoAvailable) {
       return;
@@ -359,6 +385,40 @@ describe('tasks integration', () => {
     });
     expect(typeof updated.createdAt).toBe('string');
     expect(typeof updated.updatedAt).toBe('string');
+  });
+
+  it('rejects an update to a status outside of the project set', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const updateResponse = await updateProjectHandler(
+      baseEvent({
+        pathParameters: { id: project!.id },
+        body: JSON.stringify({ statuses: ['PLANNING', 'READY'] }),
+      }),
+    );
+    expect(updateResponse.statusCode).toBe(200);
+    project = parseBody<ProjectRecord>(updateResponse.body);
+
+    const { statusCode, task } = await createTask(project.id, {
+      name: 'Initial task',
+      status: 'PLANNING',
+    });
+    expect(statusCode).toBe(201);
+    createdTaskIds.push(task.taskId);
+
+    const response = await updateTaskHandler(
+      baseEvent({
+        pathParameters: { projectId: project.id, taskId: task.taskId },
+        body: JSON.stringify({ status: 'COMPLETE' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'status must match one of the project statuses',
+    );
   });
 
   it('removes a task', async () => {

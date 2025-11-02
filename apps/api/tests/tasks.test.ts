@@ -172,6 +172,61 @@ describe('create', () => {
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
   });
+
+  it('creates a task with a provided status', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO', 'IN PROGRESS'],
+        },
+      })
+      .mockResolvedValueOnce({});
+    randomUUIDMock.mockReturnValueOnce('task-456');
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({ name: 'Write docs', status: 'IN PROGRESS' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
+      status: 'IN PROGRESS',
+    });
+
+    const putCommand = sendMock.mock.calls[1][0] as PutCommand;
+    expect(putCommand.input.Item).toMatchObject({ status: 'IN PROGRESS' });
+  });
+
+  it('rejects a status not configured on the project', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        statuses: ['TODO'],
+      },
+    });
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({ name: 'Write docs', status: 'IN REVIEW' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'status must match one of the project statuses',
+    ]);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('get', () => {
@@ -387,8 +442,32 @@ describe('update', () => {
     expect(response.statusCode).toBe(400);
     expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
       'description must be a string or null if provided',
-      'status must be a valid status if provided',
     ]);
+  });
+
+  it('rejects a status not defined on the project', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        statuses: ['TODO'],
+      },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+        body: JSON.stringify({ status: 'IN PROGRESS' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'status must match one of the project statuses',
+    ]);
+    expect(sendMock).toHaveBeenCalledTimes(1);
   });
 
   it('requires body content', async () => {
@@ -403,6 +482,16 @@ describe('update', () => {
   });
 
   it('returns 400 when there is nothing to update', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        statuses: ['TODO'],
+      },
+    });
+
     const response = await update(
       baseEvent({
         pathParameters: { projectId: 'project-1', taskId: 'task-1' },
@@ -417,20 +506,30 @@ describe('update', () => {
   });
 
   it('updates provided fields', async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: {
-        PK: 'PROJECT#project-1',
-        SK: 'TASK#task-1',
-        projectId: 'project-1',
-        taskId: 'task-1',
-        userId: 'demo-user',
-        name: 'Updated name',
-        description: 'Updated description',
-        status: 'IN PROGRESS',
-        createdAt: '2024-01-01T00:00:00.000Z',
-        updatedAt: '2024-01-01T00:00:00.000Z',
-      },
-    });
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO', 'IN PROGRESS', 'COMPLETE'],
+        },
+      })
+      .mockResolvedValueOnce({
+        Attributes: {
+          PK: 'PROJECT#project-1',
+          SK: 'TASK#task-1',
+          projectId: 'project-1',
+          taskId: 'task-1',
+          userId: 'demo-user',
+          name: 'Updated name',
+          description: 'Updated description',
+          status: 'IN PROGRESS',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+        },
+      });
 
     const response = await update(
       baseEvent({
@@ -454,7 +553,11 @@ describe('update', () => {
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
 
-    const command = sendMock.mock.calls[0][0] as UpdateCommand;
+    const getCommand = sendMock.mock.calls[0][0] as GetCommand;
+    expect(getCommand).toBeInstanceOf(GetCommand);
+    expect(getCommand.input.Key).toMatchObject({ PK: 'PROJECT#project-1', SK: 'PROJECT' });
+
+    const command = sendMock.mock.calls[1][0] as UpdateCommand;
     expect(command).toBeInstanceOf(UpdateCommand);
     expect(command.input.TableName).toBe('ProjectsTable');
     expect(command.input.Key).toMatchObject({ PK: 'PROJECT#project-1', SK: 'TASK#task-1' });
@@ -481,7 +584,17 @@ describe('update', () => {
   it('returns 404 when task does not exist', async () => {
     const error = new Error('missing');
     (error as { name: string }).name = 'ConditionalCheckFailedException';
-    sendMock.mockRejectedValueOnce(error);
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO'],
+        },
+      })
+      .mockRejectedValueOnce(error);
 
     const response = await update(
       baseEvent({

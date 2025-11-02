@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
-import { TASK_STATUS_OPTIONS } from '../constants/taskStatusOptions';
+import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
 type TaskEditorValues = {
@@ -12,6 +12,7 @@ type TaskEditorValues = {
 
 type TaskListProps = {
   tasks: Task[];
+  statuses: readonly TaskStatus[];
   isLoading: boolean;
   error: string | null;
   creatingStatus: TaskStatus | null;
@@ -24,6 +25,7 @@ type TaskListProps = {
 
 export const TaskList = ({
   tasks,
+  statuses,
   isLoading,
   error,
   creatingStatus,
@@ -38,20 +40,37 @@ export const TaskList = ({
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
+  const orderedStatuses = useMemo(() => {
+    const base = (statuses.length ? [...statuses] : [...DEFAULT_TASK_STATUSES]) as TaskStatus[];
+    const seen = new Set(base.map((status) => status.toLowerCase()));
+
+    for (const task of tasks) {
+      const key = task.status.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        base.push(task.status);
+      }
+    }
+
+    return base;
+  }, [statuses, tasks]);
+
+  const statusOptions = useMemo(() => toStatusOptions(orderedStatuses), [orderedStatuses]);
+
   const tasksByStatus = useMemo(() => {
-    const grouped = TASK_STATUS_OPTIONS.reduce<Record<TaskStatus, Task[]>>(
-      (acc, option) => {
-        acc[option.key] = [];
-        return acc;
-      },
-      {} as Record<TaskStatus, Task[]>,
-    );
+    const grouped = orderedStatuses.reduce<Record<TaskStatus, Task[]>>((acc, status) => {
+      acc[status] = [];
+      return acc;
+    }, {} as Record<TaskStatus, Task[]>);
 
     return tasks.reduce<Record<TaskStatus, Task[]>>((acc, task) => {
+      if (!acc[task.status]) {
+        acc[task.status] = [];
+      }
       acc[task.status].push(task);
       return acc;
     }, grouped);
-  }, [tasks]);
+  }, [orderedStatuses, tasks]);
 
   const tasksById = useMemo(() => {
     return tasks.reduce<Record<string, Task>>((acc, task) => {
@@ -68,6 +87,12 @@ export const TaskList = ({
       setEditingTaskId(null);
     }
   }, [editingTaskId, tasks]);
+
+  useEffect(() => {
+    if (activeCreateStatus && !orderedStatuses.includes(activeCreateStatus)) {
+      setActiveCreateStatus(null);
+    }
+  }, [activeCreateStatus, orderedStatuses]);
 
   const handleCreateSubmit = async (values: TaskEditorValues) => {
     try {
@@ -168,8 +193,8 @@ export const TaskList = ({
 
   return (
     <div className="list-view">
-      {TASK_STATUS_OPTIONS.map((statusOption) => {
-        const statusTasks = tasksByStatus[statusOption.key];
+      {statusOptions.map((statusOption) => {
+        const statusTasks = tasksByStatus[statusOption.key] ?? [];
         const showLoading = isLoading && statusTasks.length === 0;
         const showError = Boolean(error) && statusTasks.length === 0;
         const showEmpty = !isLoading && !error && statusTasks.length === 0 && activeCreateStatus !== statusOption.key;
@@ -211,7 +236,7 @@ export const TaskList = ({
                 <TaskEditor
                   mode="create"
                   status={statusOption.key}
-                  statuses={TASK_STATUS_OPTIONS}
+                  statuses={statusOptions}
                   isSubmitting={isCreating(statusOption.key)}
                   onSubmit={handleCreateSubmit}
                   onCancel={() => setActiveCreateStatus(null)}
@@ -230,7 +255,7 @@ export const TaskList = ({
                     key={task.taskId}
                     mode="edit"
                     status={task.status}
-                    statuses={TASK_STATUS_OPTIONS}
+                    statuses={statusOptions}
                     initialValues={{ name: task.name, description: task.description }}
                     isSubmitting={updatingTaskId === task.taskId}
                     isDeleting={deletingTaskId === task.taskId}

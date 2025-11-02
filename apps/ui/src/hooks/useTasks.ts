@@ -21,7 +21,7 @@ type UseTasksState = {
   deletingTaskId: string | null;
 };
 
-export const useTasks = (projectId: string | null) => {
+export const useTasks = (projectId: string | null, statuses: readonly TaskStatus[]) => {
   const [state, setState] = useState<UseTasksState>({
     tasks: [],
     isLoading: false,
@@ -31,6 +31,7 @@ export const useTasks = (projectId: string | null) => {
     deletingTaskId: null,
   });
   const projectIdRef = useRef<string | null>(projectId);
+  const statusesRef = useRef<readonly TaskStatus[]>(statuses);
   const isMountedRef = useRef(false);
 
   useEffect(() => {
@@ -50,6 +51,10 @@ export const useTasks = (projectId: string | null) => {
   useEffect(() => {
     projectIdRef.current = projectId;
   }, [projectId]);
+
+  useEffect(() => {
+    statusesRef.current = statuses;
+  }, [statuses]);
 
   const refresh = useCallback(
     async (overrideProjectId?: string) => {
@@ -115,25 +120,20 @@ export const useTasks = (projectId: string | null) => {
   const createTask = useCallback(
     async (payload: CreateTaskPayload & { status?: TaskStatus }) => {
       const currentProjectId = ensureProject();
-      const targetStatus = payload.status ?? DEFAULT_STATUS;
+      const currentStatuses = statusesRef.current;
+      const fallbackStatus = currentStatuses[0] ?? DEFAULT_STATUS;
+      const targetStatus = payload.status ?? fallbackStatus;
       setPartialState({ creatingStatus: targetStatus });
 
       try {
         const created = await apiCreateTask(currentProjectId, {
           name: payload.name,
           description: payload.description,
+          status: targetStatus,
         });
 
-        let latestTask: Task | null = created;
-
-        if (payload.status && payload.status !== created.status) {
-          latestTask = await apiUpdateTask(currentProjectId, created.taskId, {
-            status: payload.status,
-          });
-        }
-
-        const items = await refresh(currentProjectId);
-        return latestTask ?? items.find((task) => task.taskId === created.taskId) ?? null;
+        await refresh(currentProjectId);
+        return created;
       } finally {
         setPartialState({ creatingStatus: null });
       }

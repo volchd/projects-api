@@ -33,7 +33,7 @@ import type {
   ValidationResult,
   ProjectStatus,
 } from './projects.types';
-import { DEFAULT_PROJECT_STATUSES } from './projects.types';
+import { DEFAULT_PROJECT_STATUSES, MAX_PROJECT_STATUS_LENGTH } from './projects.types';
 
 const TABLE_NAME = (() => {
   const value = process.env.TABLE_NAME;
@@ -50,17 +50,92 @@ const toStringOrNull = (value: unknown): string | null | undefined => {
   return typeof value === 'string' ? value : undefined;
 };
 
-const isProjectStatus = (status: unknown): status is ProjectStatus =>
-  typeof status === 'string' && (DEFAULT_PROJECT_STATUSES as readonly string[]).includes(status);
+const normalizeStatus = (status: unknown): ProjectStatus | null => {
+  if (typeof status !== 'string') {
+    return null;
+  }
 
-const toStatuses = (value: unknown): ProjectStatus[] => {
+  const trimmed = status.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const collapsed = trimmed.replace(/\s+/g, ' ');
+  if (collapsed.length > MAX_PROJECT_STATUS_LENGTH) {
+    return null;
+  }
+
+  return collapsed.toUpperCase();
+};
+
+const ensureStatuses = (value: unknown): ProjectStatus[] => {
   if (!Array.isArray(value)) {
     return [...DEFAULT_PROJECT_STATUSES];
   }
 
-  const statuses = value.filter(isProjectStatus);
+  const seen = new Set<string>();
+  const statuses: ProjectStatus[] = [];
 
-  return statuses.length ? [...statuses] : [...DEFAULT_PROJECT_STATUSES];
+  for (const candidate of value) {
+    const normalized = normalizeStatus(candidate);
+    if (!normalized) {
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    statuses.push(normalized);
+  }
+
+  return statuses.length ? statuses : [...DEFAULT_PROJECT_STATUSES];
+};
+
+const parseStatusesInput = (value: unknown, errors: string[]): ProjectStatus[] | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(value)) {
+    errors.push('statuses must be an array of non-empty strings if provided');
+    return undefined;
+  }
+
+  const statuses: ProjectStatus[] = [];
+  const seen = new Set<string>();
+  let hasInvalid = false;
+  let hasDuplicate = false;
+
+  for (const item of value) {
+    const normalized = normalizeStatus(item);
+    if (!normalized) {
+      hasInvalid = true;
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      hasDuplicate = true;
+      continue;
+    }
+    seen.add(key);
+    statuses.push(normalized);
+  }
+
+  if (hasInvalid) {
+    errors.push(`statuses must contain non-empty strings up to ${MAX_PROJECT_STATUS_LENGTH} characters`);
+  }
+
+  if (hasDuplicate) {
+    errors.push('statuses must contain unique values');
+  }
+
+  if (!statuses.length) {
+    errors.push('statuses must include at least one value');
+    return undefined;
+  }
+
+  return statuses;
 };
 
 function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPayload> {
@@ -74,6 +149,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
   const data = payload as Record<string, unknown>;
   const name = data.name;
   const description = toStringOrNull(data.description);
+  let statuses: ProjectStatus[] | undefined;
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -81,6 +157,10 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
 
   if ('description' in data && description === undefined) {
     errors.push('description must be a string if provided');
+  }
+
+  if ('statuses' in data) {
+    statuses = parseStatusesInput(data.statuses, errors);
   }
 
   if (errors.length) {
@@ -91,6 +171,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
     value: {
       name: name as string,
       description,
+      statuses,
     },
     errors,
   };
@@ -120,6 +201,13 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateProjectPay
       result.description = data.description;
     } else {
       errors.push('description must be a string or null if provided');
+    }
+  }
+
+  if ('statuses' in data) {
+    const parsedStatuses = parseStatusesInput(data.statuses, errors);
+    if (parsedStatuses) {
+      result.statuses = parsedStatuses;
     }
   }
 
@@ -163,10 +251,10 @@ const toProject = (item: Record<string, unknown> | undefined): Project | undefin
 
   return {
     id: String(item.projectId ?? item.id),
-    userId: String(item.userId),
-    name: String(item.name),
-    description: (item.description ?? null) as string | null,
-    statuses: toStatuses(item.statuses),
+   userId: String(item.userId),
+   name: String(item.name),
+   description: (item.description ?? null) as string | null,
+    statuses: ensureStatuses(item.statuses),
   };
 };
 
@@ -197,6 +285,8 @@ export const create = async (
 
     const userId = resolveUserId(event);
     const projectId = randomUUID();
+    const statuses = value.statuses ?? [...DEFAULT_PROJECT_STATUSES];
+    const now = new Date().toISOString();
 
     const item = {
       PK: projectPk(projectId),
@@ -209,7 +299,9 @@ export const create = async (
       entityType: PROJECT_ENTITY_TYPE,
       GSI1PK: projectGsiPk(userId),
       GSI1SK: projectGsiSk(projectId),
-      statuses: [...DEFAULT_PROJECT_STATUSES],
+      statuses,
+      createdAt: now,
+      updatedAt: now,
     };
 
     await ddbDocClient.send(
@@ -308,9 +400,19 @@ export const update = async (
       exprValues[':desc'] = description;
     }
 
+    if (value.statuses !== undefined) {
+      names.push('#s = :statuses');
+      exprNames['#s'] = 'statuses';
+      exprValues[':statuses'] = value.statuses;
+    }
+
     if (names.length === 0) {
       return json(400, { message: 'Nothing to update' });
     }
+
+    names.push('#updatedAt = :updatedAt');
+    exprNames['#updatedAt'] = 'updatedAt';
+    exprValues[':updatedAt'] = new Date().toISOString();
 
     const res = await ddbDocClient.send(
       new UpdateCommand({

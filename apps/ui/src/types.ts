@@ -2,10 +2,12 @@ export type Project = {
   id: string;
   name: string;
   description: string | null;
-  statuses: string[];
+  statuses: ProjectStatus[];
 };
 
-export type TaskStatus = 'TODO' | 'IN PROGRESS' | 'COMPLETE';
+export type ProjectStatus = string;
+
+export type TaskStatus = ProjectStatus;
 
 export type Task = {
   projectId: string;
