@@ -1,6 +1,7 @@
 type TopbarProps = {
   activeView: 'board' | 'list';
   onSelectView: (view: 'board' | 'list') => void;
+  onOpenCommandPalette: () => void;
 };
 
 const TAB_OPTIONS = [
@@ -30,7 +31,7 @@ const TAB_OPTIONS = [
   },
 ] as const;
 
-export const Topbar = ({ activeView, onSelectView }: TopbarProps) => (
+export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: TopbarProps) => (
   <header className="topbar">
     <div className="topbar__search">
       <label htmlFor="search" className="sr-only">
@@ -72,7 +73,13 @@ export const Topbar = ({ activeView, onSelectView }: TopbarProps) => (
         </button>
       </nav>
       <div className="topbar__spacer" aria-hidden="true" />
-      <button type="button" className="topbar__command">
+      <button
+        type="button"
+        className="topbar__command"
+        onClick={onOpenCommandPalette}
+        aria-haspopup="dialog"
+        aria-keyshortcuts="Meta+K Control+K"
+      >
         <span>Command</span>
         <span className="topbar__command-key">⌘K</span>
       </button>

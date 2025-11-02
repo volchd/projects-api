@@ -21,6 +21,7 @@ type TaskEditorProps = {
   initialValues?: { name: string; description: string | null };
   isSubmitting: boolean;
   isDeleting?: boolean;
+  error?: string | null;
   onSubmit: (values: { name: string; description: string | null; status: TaskStatus }) => Promise<void> | void;
   onCancel: () => void;
   onDelete?: () => Promise<void> | void;
@@ -33,6 +34,7 @@ export const TaskEditor = ({
   initialValues,
   isSubmitting,
   isDeleting,
+  error,
   onSubmit,
   onCancel,
   onDelete,
@@ -93,6 +95,11 @@ export const TaskEditor = ({
         disabled={isSubmitting || isDeleting}
         rows={3}
       />
+      {error ? (
+        <div className="task-editor__error" role="alert">
+          {error}
+        </div>
+      ) : null}
       {showStatusSelector ? (
         <label className="task-editor__status">
           <span>Status</span>

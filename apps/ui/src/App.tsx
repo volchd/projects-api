@@ -8,6 +8,10 @@ import { TaskBoard } from './components/TaskBoard';
 import { TaskList } from './components/TaskList';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Topbar } from './components/Topbar';
+import { CommandPalette } from './components/CommandPalette';
+import { Modal } from './components/Modal';
+import { TaskEditor } from './components/TaskEditor';
+import { TASK_STATUS_OPTIONS } from './constants/taskStatusOptions';
 import type { Project, Task, TaskStatus } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
@@ -34,6 +38,10 @@ function App() {
   const [pendingDeleteProject, setPendingDeleteProject] = useState<Project | null>(null);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<Task | null>(null);
   const [taskView, setTaskView] = useState<TaskView>('board');
+  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [isTaskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskModalSubmitting, setTaskModalSubmitting] = useState(false);
+  const [taskModalError, setTaskModalError] = useState<string | null>(null);
   const taskDeletePromiseRef = useRef<{ resolve: () => void; reject: (reason?: unknown) => void } | null>(null);
 
   const sortedProjects = useMemo(() => {
@@ -44,6 +52,20 @@ function App() {
     () => sortedProjects.find((project) => project.id === selectedProjectId) ?? null,
     [sortedProjects, selectedProjectId],
   );
+
+  useEffect(() => {
+    const handleKeydown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandPaletteOpen((value) => !value);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, []);
 
   useEffect(() => {
     if (sortedProjects.length === 0) {
@@ -59,6 +81,13 @@ function App() {
     });
   }, [sortedProjects]);
 
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setTaskModalOpen(false);
+      setTaskModalError(null);
+    }
+  }, [selectedProjectId]);
+
   const {
     tasks,
     isLoading: tasksLoading,
@@ -72,9 +101,37 @@ function App() {
     deleteTask,
   } = useTasks(selectedProjectId);
 
+  const commandItems = useMemo(
+    () => [
+      {
+        id: 'create-project',
+        label: 'Create project',
+        description: 'Start a new project',
+        disabled: false,
+      },
+      {
+        id: 'create-task',
+        label: 'Create task',
+        description: selectedProject
+          ? `Add a task to ${selectedProject.name}`
+          : 'Select a project to enable',
+        disabled: !selectedProject,
+      },
+    ],
+    [selectedProject],
+  );
+
   const resetErrors = useCallback(() => {
     setFormError(null);
     setBoardError(null);
+  }, []);
+
+  const handleOpenCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(true);
+  }, []);
+
+  const handleCloseCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(false);
   }, []);
 
   const handleSelectProject = useCallback(
@@ -112,6 +169,24 @@ function App() {
     setProjectFormMode(null);
     resetErrors();
   }, [resetErrors]);
+
+  const handleOpenTaskModal = useCallback(() => {
+    if (!selectedProjectId) {
+      return;
+    }
+    resetErrors();
+    setTaskModalError(null);
+    setTaskModalSubmitting(false);
+    setTaskModalOpen(true);
+  }, [resetErrors, selectedProjectId]);
+
+  const handleTaskModalCancel = useCallback(() => {
+    if (taskModalSubmitting) {
+      return;
+    }
+    setTaskModalOpen(false);
+    setTaskModalError(null);
+  }, [taskModalSubmitting]);
 
   const handleCreateSubmit = useCallback(
     async ({ name, description }: { name: string; description: string }) => {
@@ -204,6 +279,42 @@ function App() {
     [createTask],
   );
 
+  const handleTaskModalSubmit = useCallback(
+    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+      try {
+        setTaskModalSubmitting(true);
+        setTaskModalError(null);
+        setBoardError(null);
+        await createTask({
+          name: values.name,
+          description: values.description,
+          status: values.status,
+        });
+        setTaskModalOpen(false);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setTaskModalError(message);
+      } finally {
+        setTaskModalSubmitting(false);
+      }
+    },
+    [createTask],
+  );
+
+  const handleCommandSelect = useCallback(
+    (commandId: string) => {
+      handleCloseCommandPalette();
+      if (commandId === 'create-project') {
+        handleCreateRequest();
+        return;
+      }
+      if (commandId === 'create-task') {
+        handleOpenTaskModal();
+      }
+    },
+    [handleCloseCommandPalette, handleCreateRequest, handleOpenTaskModal],
+  );
+
   const handleTaskUpdate = useCallback(
     async (taskId: string, values: { name: string; description: string | null; status: TaskStatus }) => {
       try {
@@ -277,6 +388,12 @@ function App() {
 
   const isUpdatingSelected =
     selectedProject && updatingProjectId === selectedProject.id && projectFormMode === 'edit';
+  const projectFormSubmitting =
+    projectFormMode === 'create'
+      ? creating
+      : projectFormMode === 'edit'
+        ? Boolean(isUpdatingSelected)
+        : false;
 
   return (
     <div className="app">
@@ -293,7 +410,11 @@ function App() {
       />
 
       <main className="main">
-        <Topbar activeView={taskView} onSelectView={handleSelectView} />
+        <Topbar
+          activeView={taskView}
+          onSelectView={handleSelectView}
+          onOpenCommandPalette={handleOpenCommandPalette}
+        />
         <section className="board">
           <header className="board__header">
             <h1>
@@ -308,30 +429,6 @@ function App() {
 
           {boardError && projectFormMode === null ? (
             <div className="board__alert board__alert--error">{boardError}</div>
-          ) : null}
-
-          {projectFormMode === 'create' ? (
-            <ProjectForm
-              mode="create"
-              isSubmitting={creating}
-              error={formError}
-              onSubmit={handleCreateSubmit}
-              onCancel={handleCancelForm}
-            />
-          ) : null}
-
-          {projectFormMode === 'edit' && selectedProject ? (
-            <ProjectForm
-              mode="edit"
-              initialValues={{
-                name: selectedProject.name,
-                description: selectedProject.description,
-              }}
-              isSubmitting={Boolean(isUpdatingSelected)}
-              error={formError}
-              onSubmit={handleEditSubmit}
-              onCancel={handleCancelForm}
-            />
           ) : null}
 
           {projectFormMode === null && !hasProject ? (
@@ -399,6 +496,62 @@ function App() {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />
+
+      <CommandPalette
+        open={isCommandPaletteOpen}
+        commands={commandItems}
+        onClose={handleCloseCommandPalette}
+        onSelect={handleCommandSelect}
+      />
+
+      <Modal
+        open={projectFormMode !== null}
+        title={projectFormMode === 'create' ? 'Create project' : 'Update project'}
+        onClose={handleCancelForm}
+        isDismissDisabled={projectFormSubmitting}
+      >
+        {projectFormMode === 'create' ? (
+          <ProjectForm
+            mode="create"
+            isSubmitting={creating}
+            error={formError}
+            onSubmit={handleCreateSubmit}
+            onCancel={handleCancelForm}
+          />
+        ) : null}
+
+        {projectFormMode === 'edit' && selectedProject ? (
+          <ProjectForm
+            mode="edit"
+            initialValues={{
+              name: selectedProject.name,
+              description: selectedProject.description,
+            }}
+            isSubmitting={Boolean(isUpdatingSelected)}
+            error={formError}
+            onSubmit={handleEditSubmit}
+            onCancel={handleCancelForm}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={isTaskModalOpen}
+        title="Create task"
+        description={selectedProject ? `Add a task to ${selectedProject.name}` : undefined}
+        onClose={handleTaskModalCancel}
+        isDismissDisabled={taskModalSubmitting}
+      >
+        <TaskEditor
+          mode="create"
+          status="TODO"
+          statuses={TASK_STATUS_OPTIONS}
+          isSubmitting={taskModalSubmitting}
+          error={taskModalError}
+          onSubmit={handleTaskModalSubmit}
+          onCancel={handleTaskModalCancel}
+        />
+      </Modal>
     </div>
   );
 }
