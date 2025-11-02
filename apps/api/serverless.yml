@@ -7,6 +7,20 @@ provider:
   runtime: nodejs20.x
   region: us-east-1
   stage: dev
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - OPTIONS
+        - GET
+        - POST
+        - PUT
+        - DELETE
+      allowCredentials: false
   environment:
     TABLE_NAME: ${self:service}-${sls:stage}-Projects
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
@@ -56,7 +70,6 @@ functions:
       - httpApi:
           method: POST
           path: /projects
-          cors: true
 
   getProject:
     handler: src/projects.get
@@ -64,7 +77,6 @@ functions:
       - httpApi:
           method: GET
           path: /projects/{id}
-          cors: true
 
   listProjectsByUser:
     handler: src/projects.listByUser
@@ -72,7 +84,6 @@ functions:
       - httpApi:
           method: GET
           path: /projects
-          cors: true
 
   updateProject:
     handler: src/projects.update
@@ -80,7 +91,6 @@ functions:
       - httpApi:
           method: PUT
           path: /projects/{id}
-          cors: true
 
   deleteProject:
     handler: src/projects.remove
@@ -88,7 +98,6 @@ functions:
       - httpApi:
           method: DELETE
           path: /projects/{id}
-          cors: true
 
   createTask:
     handler: src/tasks.create
@@ -96,7 +105,6 @@ functions:
       - httpApi:
           method: POST
           path: /projects/{projectId}/tasks
-          cors: true
 
   getTask:
     handler: src/tasks.get
@@ -104,7 +112,6 @@ functions:
       - httpApi:
           method: GET
           path: /projects/{projectId}/tasks/{taskId}
-          cors: true
 
   listTasksByProject:
     handler: src/tasks.listByProject
@@ -112,7 +119,6 @@ functions:
       - httpApi:
           method: GET
           path: /projects/{projectId}/tasks
-          cors: true
 
   updateTask:
     handler: src/tasks.update
@@ -120,7 +126,6 @@ functions:
       - httpApi:
           method: PUT
           path: /projects/{projectId}/tasks/{taskId}
-          cors: true
 
   deleteTask:
     handler: src/tasks.remove
@@ -128,7 +133,6 @@ functions:
       - httpApi:
           method: DELETE
           path: /projects/{projectId}/tasks/{taskId}
-          cors: true
 
 resources:
   Resources:

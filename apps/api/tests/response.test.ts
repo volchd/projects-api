@@ -9,6 +9,8 @@ describe('json', () => {
     expect(response.headers).toEqual({
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT,DELETE',
     });
     expect(response.body).toBe('{"ok":true}');
   });
@@ -19,6 +21,8 @@ describe('json', () => {
     expect(response.statusCode).toBe(204);
     expect(response.headers).toEqual({
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT,DELETE',
     });
     expect(response.body).toBeUndefined();
   });
