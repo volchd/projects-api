@@ -42,10 +42,7 @@ export const ProjectSidebar = ({
     if (projects.length === 0) {
       return 'No projects yet';
     }
-    if (projects.length === 1) {
-      return '1 project';
-    }
-    return `${projects.length} projects`;
+    return null;
   }, [error, isLoading, projects.length]);
 
   const handleSelect = useCallback(
@@ -70,7 +67,9 @@ export const ProjectSidebar = ({
           Projects
           {projectCountLabel && <span className="sidebar__section-count">({projectCountLabel})</span>}
         </span>
-        <p className={error ? 'sidebar__meta sidebar__meta--error' : 'sidebar__meta'}>{metaLabel}</p>
+        {metaLabel && (
+          <p className={error ? 'sidebar__meta sidebar__meta--error' : 'sidebar__meta'}>{metaLabel}</p>
+        )}
         <ul className="sidebar__list">
           {projects.map((project) => (
             <ProjectSidebarItem
