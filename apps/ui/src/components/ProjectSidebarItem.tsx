@@ -45,10 +45,9 @@ export const ProjectSidebarItem = ({
           <span className="sr-only">Edit project</span>
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path
-              d="M4 16.5V20h3.5L18.29 9.21a1 1 0 0 0 0-1.41l-2.79-2.79a1 1 0 0 0-1.41 0L4 16.5Z"
               fill="currentColor"
+              d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
             />
-            <path d="M20 22H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8v2H4v16h16v-8h2v8a2 2 0 0 1-2 2Z" fill="currentColor" />
           </svg>
         </button>
         <button
