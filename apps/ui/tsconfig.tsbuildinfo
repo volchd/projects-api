@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/api/client.ts","./src/api/projects.ts","./src/api/tasks.ts","./src/components/confirmdialog.tsx","./src/components/projectform.tsx","./src/components/projectsidebar.tsx","./src/components/projectsidebaritem.tsx","./src/components/taskboard.tsx","./src/components/topbar.tsx","./src/hooks/useclickoutside.ts","./src/hooks/useescapekey.ts","./src/hooks/useprojects.ts","./src/hooks/usetasks.ts"],"version":"5.9.3"}
