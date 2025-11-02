@@ -560,18 +560,28 @@
   flex-wrap: nowrap;
   flex: 1;
   min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .board__columns::-webkit-scrollbar {
+  height: 0;
+}
+
+.board__columns--scrolling {
+  scrollbar-width: thin;
+}
+
+.board__columns--scrolling::-webkit-scrollbar {
   height: 8px;
 }
 
-.board__columns::-webkit-scrollbar-thumb {
+.board__columns--scrolling::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.6);
   border-radius: 999px;
 }
 
-.board__columns::-webkit-scrollbar-track {
+.board__columns--scrolling::-webkit-scrollbar-track {
   background: rgba(226, 232, 240, 0.4);
 }
 

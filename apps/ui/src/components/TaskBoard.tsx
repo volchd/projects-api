@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
@@ -51,6 +51,8 @@ export const TaskBoard = ({
   const [isAddingStatus, setIsAddingStatus] = useState(false);
   const [newStatusName, setNewStatusName] = useState('');
   const [addStatusError, setAddStatusError] = useState<string | null>(null);
+  const [isColumnsScrolling, setIsColumnsScrolling] = useState(false);
+  const columnsRef = useRef<HTMLDivElement | null>(null);
 
   const orderedStatuses = useMemo(() => {
     const base = (statuses.length ? [...statuses] : [...DEFAULT_TASK_STATUSES]) as TaskStatus[];
@@ -115,6 +117,41 @@ export const TaskBoard = ({
       setDragOverStatus(null);
     }
   }, [dragOverStatus, orderedStatuses]);
+
+  useEffect(() => {
+    const node = columnsRef.current;
+    if (!node) {
+      return;
+    }
+
+    let hideTimeout: ReturnType<typeof window.setTimeout> | null = null;
+
+    const handleScroll = () => {
+      setIsColumnsScrolling((current) => {
+        if (!current) {
+          return true;
+        }
+        return current;
+      });
+
+      if (hideTimeout) {
+        window.clearTimeout(hideTimeout);
+      }
+
+      hideTimeout = window.setTimeout(() => {
+        setIsColumnsScrolling(false);
+      }, 900);
+    };
+
+    node.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      node.removeEventListener('scroll', handleScroll);
+      if (hideTimeout) {
+        window.clearTimeout(hideTimeout);
+      }
+    };
+  }, []);
 
   const handleCreateSubmit = async (values: TaskEditorValues) => {
     try {
@@ -432,7 +469,10 @@ export const TaskBoard = ({
   );
 
   return (
-    <div className="board__columns">
+    <div
+      className={`board__columns${isColumnsScrolling ? ' board__columns--scrolling' : ''}`}
+      ref={columnsRef}
+    >
       {statusOptions.map((column) => {
         const columnTasks = tasksByStatus[column.key] ?? [];
         const showEmptyState =
