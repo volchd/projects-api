@@ -282,11 +282,25 @@ function App() {
     setEditingProject(false);
     setProjectMenuOpenId(null);
     setUpdateProjectError(null);
+    setShowProjectForm(false);
+    setCreateProjectError(null);
+    setNewProjectName('');
+    setNewProjectDescription('');
   };
 
   const handleNewProjectToggle = () => {
-    setShowProjectForm((prev) => !prev);
-    setCreateProjectError(null);
+    setShowProjectForm((previous) => {
+      const next = !previous;
+      setCreateProjectError(null);
+      if (next) {
+        setEditingProject(false);
+        setUpdateProjectError(null);
+      } else {
+        setNewProjectName('');
+        setNewProjectDescription('');
+      }
+      return next;
+    });
   };
 
   const handleProjectMenuToggle = (projectId: string) => {
@@ -304,6 +318,10 @@ function App() {
   const handleEditProjectClick = (project: Project) => {
     setProjectMenuOpenId(null);
     setSelectedProjectId(project.id);
+    setShowProjectForm(false);
+    setCreateProjectError(null);
+    setNewProjectName('');
+    setNewProjectDescription('');
     setEditingProject(true);
     setEditProjectName(project.name);
     setEditProjectDescription(project.description ?? '');
@@ -408,42 +426,11 @@ function App() {
           type="button"
           className="sidebar__new-project"
           onClick={handleNewProjectToggle}
+          disabled={creatingProject}
         >
           <span className="sidebar__new-project-plus">+</span>
           New Project
         </button>
-
-        {showProjectForm ? (
-          <form className="sidebar__form" onSubmit={handleCreateProject}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Project name"
-              value={newProjectName}
-              onChange={(event) => setNewProjectName(event.target.value)}
-              disabled={creatingProject}
-            />
-            <textarea
-              name="description"
-              placeholder="Short description (optional)"
-              value={newProjectDescription}
-              onChange={(event) => setNewProjectDescription(event.target.value)}
-              disabled={creatingProject}
-              rows={2}
-            />
-            {createProjectError ? (
-              <p className="sidebar__form-error">{createProjectError}</p>
-            ) : null}
-            <div className="sidebar__form-actions">
-              <button type="submit" disabled={creatingProject}>
-                {creatingProject ? 'Creating…' : 'Create'}
-              </button>
-              <button type="button" onClick={handleNewProjectToggle} disabled={creatingProject}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : null}
 
         <div className="sidebar__section">
           <div className="sidebar__section-title">Projects</div>
@@ -588,15 +575,64 @@ function App() {
 
         <section className="board">
           <header className="board__header">
-            <h1>{selectedProject?.name ?? 'Select a project'}</h1>
-            {selectedProject?.description ? <p>{selectedProject.description}</p> : null}
+            <h1>
+              {showProjectForm
+                ? 'Create a project'
+                : selectedProject?.name ?? 'Select a project'}
+            </h1>
+            {!showProjectForm && selectedProject?.description ? (
+              <p>{selectedProject.description}</p>
+            ) : null}
           </header>
 
-          {updateProjectError ? (
+          {showProjectForm && createProjectError ? (
+            <div className="board__alert board__alert--error">{createProjectError}</div>
+          ) : null}
+
+          {showProjectForm ? (
+            <form className="project-editor" onSubmit={handleCreateProject}>
+              <div className="project-editor__field">
+                <label htmlFor="new-project-name" className="project-editor__label">
+                  Project name
+                </label>
+                <input
+                  id="new-project-name"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(event) => setNewProjectName(event.target.value)}
+                  disabled={creatingProject}
+                  placeholder="Project name"
+                />
+              </div>
+              <div className="project-editor__field">
+                <label htmlFor="new-project-description" className="project-editor__label">
+                  Description
+                </label>
+                <textarea
+                  id="new-project-description"
+                  value={newProjectDescription}
+                  onChange={(event) => setNewProjectDescription(event.target.value)}
+                  disabled={creatingProject}
+                  placeholder="Short description (optional)"
+                  rows={3}
+                />
+              </div>
+              <div className="project-editor__actions">
+                <button type="submit" disabled={creatingProject}>
+                  {creatingProject ? 'Creating…' : 'Create project'}
+                </button>
+                <button type="button" onClick={handleNewProjectToggle} disabled={creatingProject}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          {!showProjectForm && updateProjectError ? (
             <div className="board__alert board__alert--error">{updateProjectError}</div>
           ) : null}
 
-          {editingProject && selectedProject ? (
+          {!showProjectForm && editingProject && selectedProject ? (
             <form className="project-editor" onSubmit={handleUpdateProject}>
               <div className="project-editor__field">
                 <label htmlFor="edit-project-name" className="project-editor__label">
@@ -635,11 +671,11 @@ function App() {
             </form>
           ) : null}
 
-          {!selectedProjectId ? (
+          {!showProjectForm && !selectedProjectId ? (
             <div className="board__empty">Choose a project to view its tasks.</div>
           ) : null}
 
-          {selectedProjectId ? (
+          {!showProjectForm && selectedProjectId ? (
             <div className="board__columns">
               {TASK_COLUMNS.map((column) => (
                 <div className="board__column" key={column.key}>
