@@ -123,6 +123,7 @@ function App() {
   const [updatingProject, setUpdatingProject] = useState(false);
   const [updateProjectError, setUpdateProjectError] = useState<string | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [projectPendingDelete, setProjectPendingDelete] = useState<Project | null>(null);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => a.name.localeCompare(b.name));
@@ -146,6 +147,9 @@ function App() {
 
     return grouped;
   }, [tasks]);
+
+  const isDeleteInProgress =
+    projectPendingDelete !== null && deletingProjectId === projectPendingDelete.id;
 
   useEffect(() => {
     let cancelled = false;
@@ -240,6 +244,23 @@ function App() {
       setEditProjectDescription('');
     }
   }, [selectedProject]);
+
+  useEffect(() => {
+    if (!projectPendingDelete) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !deletingProjectId) {
+        setProjectPendingDelete(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [projectPendingDelete, deletingProjectId]);
 
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -376,12 +397,25 @@ function App() {
     }
   };
 
-  const handleDeleteProject = async (project: Project) => {
-    const confirmed = window.confirm(`Delete “${project.name}”? This cannot be undone.`);
+  const handleDeleteProjectRequest = (project: Project) => {
+    setProjectPendingDelete(project);
+    setProjectMenuOpenId(null);
+    setUpdateProjectError(null);
+  };
 
-    if (!confirmed) {
+  const handleDeleteProjectCancel = () => {
+    if (deletingProjectId) {
       return;
     }
+    setProjectPendingDelete(null);
+  };
+
+  const handleDeleteProjectConfirm = async () => {
+    if (!projectPendingDelete) {
+      return;
+    }
+
+    const project = projectPendingDelete;
 
     try {
       setDeletingProjectId(project.id);
@@ -408,6 +442,7 @@ function App() {
         setEditProjectName('');
         setEditProjectDescription('');
       }
+      setProjectPendingDelete(null);
     } catch (err) {
       setUpdateProjectError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -488,7 +523,7 @@ function App() {
                         <button
                           type="button"
                           className="sidebar__project-menu-item sidebar__project-menu-item--danger"
-                          onClick={() => handleDeleteProject(project)}
+                          onClick={() => handleDeleteProjectRequest(project)}
                           disabled={isDeleting}
                           role="menuitem"
                         >
@@ -724,6 +759,52 @@ function App() {
           ) : null}
         </section>
       </main>
+      {projectPendingDelete ? (
+        <div className="confirm-dialog__backdrop" role="presentation" onClick={handleDeleteProjectCancel}>
+          <div
+            className="confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            aria-describedby="confirm-dialog-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confirm-dialog__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 14h-2v-2h2Zm0-4h-2V7h2Z"
+                />
+              </svg>
+            </div>
+            <h2 id="confirm-dialog-title" className="confirm-dialog__title">
+              Delete project
+            </h2>
+            <p id="confirm-dialog-description" className="confirm-dialog__description">
+              Are you sure you want to delete “{projectPendingDelete.name}”? This action cannot be
+              undone.
+            </p>
+            <div className="confirm-dialog__actions">
+              <button
+                type="button"
+                className="confirm-dialog__button"
+                onClick={handleDeleteProjectCancel}
+                disabled={isDeleteInProgress}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-dialog__button confirm-dialog__button--danger"
+                onClick={handleDeleteProjectConfirm}
+                disabled={isDeleteInProgress}
+              >
+                {isDeleteInProgress ? 'Deleting…' : 'Delete project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
