@@ -3,6 +3,7 @@
   color: #1f2937;
   background: #f6f8fc;
   min-height: 100vh;
+  height: 100vh;
   display: flex;
 }
 
@@ -26,6 +27,10 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
 }
 
 .sidebar__header {
@@ -260,6 +265,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .topbar {
@@ -418,6 +426,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .board__header {
@@ -548,6 +558,8 @@
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
+  flex: 1;
+  min-height: 0;
 }
 
 .board__columns::-webkit-scrollbar {
@@ -567,6 +579,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  flex: 1;
+  min-height: 0;
 }
 
 .list-view__section {
@@ -1438,12 +1452,23 @@
 @media (max-width: 960px) {
   .app {
     flex-direction: column;
+    height: auto;
   }
 
   .sidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid #e6ebf1;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    position: static;
+    top: auto;
+  }
+
+  .main {
+    height: auto;
+    overflow: visible;
   }
 
   .topbar {
@@ -1463,6 +1488,7 @@
 
   .board {
     padding: 28px 24px 32px;
+    overflow: visible;
   }
 
   .board__columns {
