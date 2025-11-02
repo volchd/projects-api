@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
+import { TASK_STATUS_OPTIONS } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
-
-const TASK_COLUMNS = [
-  { key: 'TODO' as TaskStatus, label: 'To Do' },
-  { key: 'IN PROGRESS' as TaskStatus, label: 'In Progress' },
-  { key: 'COMPLETE' as TaskStatus, label: 'Done' },
-] as const;
 
 type TaskEditorValues = {
   name: string;
@@ -44,13 +39,18 @@ export const TaskBoard = ({
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
   const tasksByStatus = useMemo(() => {
-    return tasks.reduce<Record<TaskStatus, Task[]>>(
-      (acc, task) => {
-        acc[task.status].push(task);
+    const base = TASK_STATUS_OPTIONS.reduce<Record<TaskStatus, Task[]>>(
+      (acc, option) => {
+        acc[option.key] = [];
         return acc;
       },
-      { TODO: [], 'IN PROGRESS': [], COMPLETE: [] },
+      {} as Record<TaskStatus, Task[]>,
     );
+
+    return tasks.reduce<Record<TaskStatus, Task[]>>((acc, task) => {
+      acc[task.status].push(task);
+      return acc;
+    }, base);
   }, [tasks]);
 
   const tasksById = useMemo(() => {
@@ -168,7 +168,7 @@ export const TaskBoard = ({
 
   return (
     <div className="board__columns">
-      {TASK_COLUMNS.map((column) => {
+      {TASK_STATUS_OPTIONS.map((column) => {
         const columnTasks = tasksByStatus[column.key];
         const showEmptyState =
           columnTasks.length === 0 && activeCreateStatus !== column.key && !isLoading && !error;
@@ -197,7 +197,7 @@ export const TaskBoard = ({
                 <TaskEditor
                   mode="create"
                   status={column.key}
-                  statuses={TASK_COLUMNS}
+                  statuses={TASK_STATUS_OPTIONS}
                   isSubmitting={isCreating(column.key)}
                   onSubmit={handleCreateSubmit}
                   onCancel={() => setActiveCreateStatus(null)}
@@ -216,7 +216,7 @@ export const TaskBoard = ({
                     key={task.taskId}
                     mode="edit"
                     status={task.status}
-                    statuses={TASK_COLUMNS}
+                    statuses={TASK_STATUS_OPTIONS}
                     initialValues={{ name: task.name, description: task.description }}
                     isSubmitting={updatingTaskId === task.taskId}
                     isDeleting={deletingTaskId === task.taskId}

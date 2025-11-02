@@ -1,4 +1,36 @@
-export const Topbar = () => (
+type TopbarProps = {
+  activeView: 'board' | 'list';
+  onSelectView: (view: 'board' | 'list') => void;
+};
+
+const TAB_OPTIONS = [
+  {
+    key: 'board',
+    label: 'Board',
+    icon: (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M4 5h16a1 1 0 0 1 1 1v12.5a.5.5 0 0 1-.85.35L15 15H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    key: 'list',
+    label: 'List',
+    icon: (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M5 6h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"
+        />
+      </svg>
+    ),
+  },
+] as const;
+
+export const Topbar = ({ activeView, onSelectView }: TopbarProps) => (
   <header className="topbar">
     <div className="topbar__search">
       <label htmlFor="search" className="sr-only">
@@ -17,24 +49,18 @@ export const Topbar = () => (
 
     <div className="topbar__actions">
       <nav className="topbar__tabs">
-        <button className="topbar__tab topbar__tab--active" type="button">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M4 5h16a1 1 0 0 1 1 1v12.5a.5.5 0 0 1-.85.35L15 15H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
-            />
-          </svg>
-          Board
-        </button>
-        <button className="topbar__tab" type="button">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M5 6h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"
-            />
-          </svg>
-          List
-        </button>
+        {TAB_OPTIONS.map((tab) => (
+          <button
+            key={tab.key}
+            className={`topbar__tab${activeView === tab.key ? ' topbar__tab--active' : ''}`}
+            type="button"
+            onClick={() => onSelectView(tab.key)}
+            aria-pressed={activeView === tab.key}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
         <button className="topbar__tab" type="button">
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path

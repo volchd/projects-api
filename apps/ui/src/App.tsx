@@ -5,11 +5,13 @@ import { useTasks } from './hooks/useTasks';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ProjectForm } from './components/ProjectForm';
 import { TaskBoard } from './components/TaskBoard';
+import { TaskList } from './components/TaskList';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Topbar } from './components/Topbar';
 import type { Project, Task, TaskStatus } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
+type TaskView = 'board' | 'list';
 
 const UNKNOWN_ERROR = 'Unknown error';
 
@@ -31,6 +33,7 @@ function App() {
   const [boardError, setBoardError] = useState<string | null>(null);
   const [pendingDeleteProject, setPendingDeleteProject] = useState<Project | null>(null);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<Task | null>(null);
+  const [taskView, setTaskView] = useState<TaskView>('board');
   const taskDeletePromiseRef = useRef<{ resolve: () => void; reject: (reason?: unknown) => void } | null>(null);
 
   const sortedProjects = useMemo(() => {
@@ -268,6 +271,10 @@ function App() {
     setPendingDeleteTask(null);
   }, [deletingTaskId, pendingDeleteTask]);
 
+  const handleSelectView = useCallback((view: TaskView) => {
+    setTaskView(view);
+  }, [setTaskView]);
+
   const isUpdatingSelected =
     selectedProject && updatingProjectId === selectedProject.id && projectFormMode === 'edit';
 
@@ -286,7 +293,7 @@ function App() {
       />
 
       <main className="main">
-        <Topbar />
+        <Topbar activeView={taskView} onSelectView={handleSelectView} />
         <section className="board">
           <header className="board__header">
             <h1>
@@ -332,18 +339,33 @@ function App() {
           ) : null}
 
           {projectFormMode === null && hasProject ? (
-            <TaskBoard
-              key={selectedProjectId ?? 'no-project'}
-              tasks={tasks}
-              isLoading={tasksLoading}
-              error={tasksError}
-              creatingStatus={creatingTaskStatus}
-              updatingTaskId={updatingTaskId}
-              deletingTaskId={deletingTaskId}
-              onCreateTask={handleTaskCreate}
-              onUpdateTask={handleTaskUpdate}
-              onDeleteTask={handleTaskDeleteRequest}
-            />
+            taskView === 'board' ? (
+              <TaskBoard
+                key={`${selectedProjectId ?? 'no-project'}-board`}
+                tasks={tasks}
+                isLoading={tasksLoading}
+                error={tasksError}
+                creatingStatus={creatingTaskStatus}
+                updatingTaskId={updatingTaskId}
+                deletingTaskId={deletingTaskId}
+                onCreateTask={handleTaskCreate}
+                onUpdateTask={handleTaskUpdate}
+                onDeleteTask={handleTaskDeleteRequest}
+              />
+            ) : (
+              <TaskList
+                key={`${selectedProjectId ?? 'no-project'}-list`}
+                tasks={tasks}
+                isLoading={tasksLoading}
+                error={tasksError}
+                creatingStatus={creatingTaskStatus}
+                updatingTaskId={updatingTaskId}
+                deletingTaskId={deletingTaskId}
+                onCreateTask={handleTaskCreate}
+                onUpdateTask={handleTaskUpdate}
+                onDeleteTask={handleTaskDeleteRequest}
+              />
+            )
           ) : null}
         </section>
       </main>
