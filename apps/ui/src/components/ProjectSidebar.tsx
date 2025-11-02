@@ -25,6 +25,13 @@ export const ProjectSidebar = ({
   onEditProject,
   onDeleteProject,
 }: ProjectSidebarProps) => {
+  const projectCountLabel = useMemo(() => {
+    if (error || isLoading) {
+      return null;
+    }
+    return projects.length.toString();
+  }, [error, isLoading, projects.length]);
+
   const metaLabel = useMemo(() => {
     if (error) {
       return error;
@@ -59,7 +66,10 @@ export const ProjectSidebar = ({
       </div>
 
       <div className="sidebar__section">
-        <span className="sidebar__section-title">Projects</span>
+        <span className="sidebar__section-title">
+          Projects
+          {projectCountLabel && <span className="sidebar__section-count">({projectCountLabel})</span>}
+        </span>
         <p className={error ? 'sidebar__meta sidebar__meta--error' : 'sidebar__meta'}>{metaLabel}</p>
         <ul className="sidebar__list">
           {projects.map((project) => (

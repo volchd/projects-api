@@ -156,6 +156,15 @@
   color: #64748b;
 }
 
+.sidebar__section-count {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
 .sidebar__meta {
   font-size: 0.9rem;
   color: #768397;
