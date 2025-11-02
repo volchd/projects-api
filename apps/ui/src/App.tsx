@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 
 type Project = {
@@ -53,6 +53,39 @@ const createProject = async (payload: { name: string; description: string | null
   }
 };
 
+const updateProject = async (
+  projectId: string,
+  payload: { name: string; description: string | null },
+) => {
+  const response = await fetch(apiUrl(`/projects/${projectId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => undefined);
+    const message =
+      (Array.isArray(data?.errors) && data.errors.join(', ')) ||
+      (typeof data?.message === 'string' ? data.message : 'Failed to update project');
+    throw new Error(message);
+  }
+};
+
+const deleteProject = async (projectId: string) => {
+  const response = await fetch(apiUrl(`/projects/${projectId}`), {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => undefined);
+    const message =
+      (Array.isArray(data?.errors) && data.errors.join(', ')) ||
+      (typeof data?.message === 'string' ? data.message : 'Failed to delete project');
+    throw new Error(message);
+  }
+};
+
 const fetchTasks = async (projectId: string): Promise<Task[]> => {
   const response = await fetch(apiUrl(`/projects/${projectId}/tasks`));
   if (!response.ok) {
@@ -82,6 +115,14 @@ function App() {
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
   const [createProjectError, setCreateProjectError] = useState<string | null>(null);
+  const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
+  const projectMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [editingProject, setEditingProject] = useState(false);
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [updatingProject, setUpdatingProject] = useState(false);
+  const [updateProjectError, setUpdateProjectError] = useState<string | null>(null);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => a.name.localeCompare(b.name));
@@ -173,6 +214,33 @@ function App() {
     };
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    if (!projectMenuOpenId) {
+      return;
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      const container = projectMenuRefs.current[projectMenuOpenId];
+      if (container && !container.contains(event.target as Node)) {
+        setProjectMenuOpenId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [projectMenuOpenId]);
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setProjectMenuOpenId(null);
+      setEditingProject(false);
+      setEditProjectName('');
+      setEditProjectDescription('');
+    }
+  }, [selectedProject]);
+
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = newProjectName.trim();
@@ -211,11 +279,122 @@ function App() {
 
   const handleProjectSelect = (projectId: string) => {
     setSelectedProjectId(projectId);
+    setEditingProject(false);
+    setProjectMenuOpenId(null);
+    setUpdateProjectError(null);
   };
 
   const handleNewProjectToggle = () => {
     setShowProjectForm((prev) => !prev);
     setCreateProjectError(null);
+  };
+
+  const handleProjectMenuToggle = (projectId: string) => {
+    setProjectMenuOpenId((previous) => (previous === projectId ? null : projectId));
+  };
+
+  const registerProjectMenuRef = (projectId: string) => (node: HTMLDivElement | null) => {
+    if (node) {
+      projectMenuRefs.current[projectId] = node;
+    } else {
+      delete projectMenuRefs.current[projectId];
+    }
+  };
+
+  const handleEditProjectClick = (project: Project) => {
+    setProjectMenuOpenId(null);
+    setSelectedProjectId(project.id);
+    setEditingProject(true);
+    setEditProjectName(project.name);
+    setEditProjectDescription(project.description ?? '');
+    setUpdateProjectError(null);
+  };
+
+  const handleEditProjectCancel = () => {
+    setEditingProject(false);
+    setUpdateProjectError(null);
+    setEditProjectName('');
+    setEditProjectDescription('');
+  };
+
+  const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedProject) {
+      return;
+    }
+
+    const trimmedName = editProjectName.trim();
+    const trimmedDescription = editProjectDescription.trim();
+
+    if (!trimmedName) {
+      setUpdateProjectError('Project name is required');
+      return;
+    }
+
+    try {
+      setUpdatingProject(true);
+      setUpdateProjectError(null);
+      const projectId = selectedProject.id;
+      await updateProject(projectId, {
+        name: trimmedName,
+        description: trimmedDescription ? trimmedDescription : null,
+      });
+      const items = await fetchProjects();
+      setProjects(items);
+      setSelectedProjectId((previous) => {
+        if (previous && items.some((project) => project.id === previous)) {
+          return previous;
+        }
+        return projectId;
+      });
+      setEditingProject(false);
+      setEditProjectName('');
+      setEditProjectDescription('');
+    } catch (err) {
+      setUpdateProjectError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setUpdatingProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (project: Project) => {
+    const confirmed = window.confirm(`Delete “${project.name}”? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingProjectId(project.id);
+      setUpdateProjectError(null);
+      setProjectMenuOpenId(null);
+      const projectId = project.id;
+      const deletingSelected =
+        selectedProjectId === projectId ||
+        (!selectedProjectId && selectedProject?.id === projectId);
+      await deleteProject(projectId);
+      const items = await fetchProjects();
+      setProjects(items);
+      setSelectedProjectId((previous) => {
+        if (!previous) {
+          return items[0]?.id ?? null;
+        }
+        if (previous !== projectId && items.some((item) => item.id === previous)) {
+          return previous;
+        }
+        return items.find((item) => item.id !== projectId)?.id ?? null;
+      });
+      if (deletingSelected || (editingProject && selectedProject?.id === projectId)) {
+        setEditingProject(false);
+        setEditProjectName('');
+        setEditProjectDescription('');
+      }
+    } catch (err) {
+      setUpdateProjectError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setDeletingProjectId(null);
+    }
   };
 
   return (
@@ -278,21 +457,62 @@ function App() {
           ) : null}
 
           <ul className="sidebar__list">
-            {sortedProjects.map((project) => (
-              <li key={project.id}>
-                <button
-                  type="button"
-                  onClick={() => handleProjectSelect(project.id)}
-                  className={
-                    project.id === selectedProjectId
-                      ? 'sidebar__project sidebar__project--active'
-                      : 'sidebar__project'
-                  }
-                >
-                  <span>{project.name}</span>
-                </button>
-              </li>
-            ))}
+            {sortedProjects.map((project) => {
+              const isMenuOpen = projectMenuOpenId === project.id;
+              const isDeleting = deletingProjectId === project.id;
+              const isActive = project.id === selectedProjectId;
+              return (
+                <li key={project.id} className="sidebar__project-item">
+                  <div
+                    className={isActive ? 'sidebar__project sidebar__project--active' : 'sidebar__project'}
+                    ref={registerProjectMenuRef(project.id)}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleProjectSelect(project.id)}
+                      className="sidebar__project-button"
+                    >
+                      <span>{project.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="sidebar__project-menu-button"
+                      onClick={() => handleProjectMenuToggle(project.id)}
+                      aria-haspopup="menu"
+                      aria-expanded={isMenuOpen}
+                    >
+                      <span className="sr-only">Project actions</span>
+                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="1.5" fill="currentColor" />
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                        <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+                      </svg>
+                    </button>
+                    {isMenuOpen ? (
+                      <div className="sidebar__project-menu" role="menu">
+                        <button
+                          type="button"
+                          className="sidebar__project-menu-item"
+                          onClick={() => handleEditProjectClick(project)}
+                          role="menuitem"
+                        >
+                          Update project
+                        </button>
+                        <button
+                          type="button"
+                          className="sidebar__project-menu-item sidebar__project-menu-item--danger"
+                          onClick={() => handleDeleteProject(project)}
+                          disabled={isDeleting}
+                          role="menuitem"
+                        >
+                          {isDeleting ? 'Deleting…' : 'Delete project'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </aside>
@@ -368,11 +588,52 @@ function App() {
 
         <section className="board">
           <header className="board__header">
-            <div>
-              <h1>{selectedProject?.name ?? 'Select a project'}</h1>
-              {selectedProject?.description ? <p>{selectedProject.description}</p> : null}
-            </div>
+            <h1>{selectedProject?.name ?? 'Select a project'}</h1>
+            {selectedProject?.description ? <p>{selectedProject.description}</p> : null}
           </header>
+
+          {updateProjectError ? (
+            <div className="board__alert board__alert--error">{updateProjectError}</div>
+          ) : null}
+
+          {editingProject && selectedProject ? (
+            <form className="project-editor" onSubmit={handleUpdateProject}>
+              <div className="project-editor__field">
+                <label htmlFor="edit-project-name" className="project-editor__label">
+                  Project name
+                </label>
+                <input
+                  id="edit-project-name"
+                  type="text"
+                  value={editProjectName}
+                  onChange={(event) => setEditProjectName(event.target.value)}
+                  disabled={updatingProject}
+                  placeholder="Project name"
+                />
+              </div>
+              <div className="project-editor__field">
+                <label htmlFor="edit-project-description" className="project-editor__label">
+                  Description
+                </label>
+                <textarea
+                  id="edit-project-description"
+                  value={editProjectDescription}
+                  onChange={(event) => setEditProjectDescription(event.target.value)}
+                  disabled={updatingProject}
+                  placeholder="Short description (optional)"
+                  rows={3}
+                />
+              </div>
+              <div className="project-editor__actions">
+                <button type="submit" disabled={updatingProject}>
+                  {updatingProject ? 'Saving…' : 'Save changes'}
+                </button>
+                <button type="button" onClick={handleEditProjectCancel} disabled={updatingProject}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           {!selectedProjectId ? (
             <div className="board__empty">Choose a project to view its tasks.</div>

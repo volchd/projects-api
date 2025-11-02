@@ -174,16 +174,18 @@
   gap: 4px;
 }
 
+.sidebar__project-item {
+  position: relative;
+}
+
 .sidebar__project {
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: 10px;
-  border: none;
-  background: transparent;
-  font-size: 0.98rem;
   color: #1f2937;
-  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -194,7 +196,92 @@
 .sidebar__project--active {
   background: #edf2ff;
   color: #243b7a;
+}
+
+.sidebar__project-button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  text-align: left;
+  font-size: 0.98rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sidebar__project--active .sidebar__project-button {
   font-weight: 600;
+}
+
+.sidebar__project-menu-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar__project-menu-button:hover {
+  background: #e2e8f6;
+  color: #1f3556;
+}
+
+.sidebar__project-menu-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar__project-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 30;
+}
+
+.sidebar__project-menu-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar__project-menu-item:hover {
+  background: #edf2ff;
+  color: #1f3556;
+}
+
+.sidebar__project-menu-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sidebar__project-menu-item--danger {
+  color: #b91c1c;
+}
+
+.sidebar__project-menu-item--danger:hover {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .main {
@@ -361,6 +448,12 @@
   gap: 24px;
 }
 
+.board__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .board__header h1 {
   margin: 0;
   font-size: 1.75rem;
@@ -371,6 +464,98 @@
 .board__header p {
   margin: 6px 0 0;
   color: #64748b;
+}
+
+.board__alert {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.board__alert--error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.project-editor {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.project-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-editor__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.project-editor input,
+.project-editor textarea {
+  border: 1px solid #d1d9e6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  color: #1f2937;
+  resize: vertical;
+}
+
+.project-editor input:focus,
+.project-editor textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.project-editor textarea {
+  min-height: 80px;
+}
+
+.project-editor__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.project-editor__actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.project-editor__actions button[type='submit'] {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.project-editor__actions button[type='submit']:disabled {
+  background: #9cc1fb;
+  cursor: not-allowed;
+}
+
+.project-editor__actions button[type='button'] {
+  background: #e2e8f6;
+  color: #1f2937;
+}
+
+.project-editor__actions button[type='button']:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .board__empty {
