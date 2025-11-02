@@ -426,7 +426,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  overflow-y: auto;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -552,8 +552,9 @@
 .board__columns {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 8px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
@@ -726,6 +727,7 @@
   gap: 16px;
   width: 320px;
   flex: 0 0 320px;
+  min-height: 0;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   scroll-snap-align: start;
 }
@@ -835,6 +837,8 @@
   flex-direction: column;
   gap: 14px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .board__add-status-trigger {
@@ -1497,7 +1501,7 @@
 
   .board {
     padding: 28px 24px 32px;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .board__columns {
