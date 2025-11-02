@@ -226,6 +226,32 @@ function App() {
     [selectedProject, updateProjectStatuses],
   );
 
+  const handleReorderStatuses = useCallback(
+    async (nextStatuses: readonly TaskStatus[]) => {
+      if (!selectedProject) {
+        throw new Error('Select a project before reordering statuses');
+      }
+
+      const isSameOrder =
+        selectedProject.statuses.length === nextStatuses.length &&
+        selectedProject.statuses.every((status, index) => status === nextStatuses[index]);
+
+      if (isSameOrder) {
+        return;
+      }
+
+      try {
+        setBoardError(null);
+        await updateProjectStatuses(selectedProject.id, [...nextStatuses]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setBoardError(message);
+        throw new Error(message);
+      }
+    },
+    [selectedProject, updateProjectStatuses],
+  );
+
   const handleCreateSubmit = useCallback(
     async ({ name, description }: { name: string; description: string }) => {
       if (!name) {
@@ -491,6 +517,7 @@ function App() {
                 onUpdateTask={handleTaskUpdate}
                 onDeleteTask={handleTaskDeleteRequest}
                 onAddStatus={handleAddStatus}
+                onReorderStatuses={handleReorderStatuses}
               />
             ) : (
               <TaskList

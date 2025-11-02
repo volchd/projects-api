@@ -23,6 +23,7 @@ type TaskBoardProps = {
   onUpdateTask: (taskId: string, values: TaskEditorValues) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
   onAddStatus: (status: string) => Promise<void>;
+  onReorderStatuses: (statuses: readonly TaskStatus[]) => Promise<void>;
 };
 
 export const TaskBoard = ({
@@ -38,11 +39,15 @@ export const TaskBoard = ({
   onUpdateTask,
   onDeleteTask,
   onAddStatus,
+  onReorderStatuses,
 }: TaskBoardProps) => {
   const [activeCreateStatus, setActiveCreateStatus] = useState<TaskStatus | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
+  const [draggingStatus, setDraggingStatus] = useState<TaskStatus | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+  const [isDragOverAddColumn, setDragOverAddColumn] = useState(false);
   const [isAddingStatus, setIsAddingStatus] = useState(false);
   const [newStatusName, setNewStatusName] = useState('');
   const [addStatusError, setAddStatusError] = useState<string | null>(null);
@@ -63,6 +68,10 @@ export const TaskBoard = ({
   }, [statuses, tasks]);
 
   const statusOptions = useMemo(() => toStatusOptions(orderedStatuses), [orderedStatuses]);
+  const sortableStatusKeys = useMemo(() => {
+    const baseStatuses = statuses.length ? [...statuses] : [...DEFAULT_TASK_STATUSES];
+    return new Set(baseStatuses.map((status) => status.toLowerCase()));
+  }, [statuses]);
 
   const tasksByStatus = useMemo(() => {
     const base = orderedStatuses.reduce<Record<TaskStatus, Task[]>>((acc, status) => {
@@ -253,6 +262,175 @@ export const TaskBoard = ({
     [draggingTaskId, onUpdateTask, tasksById],
   );
 
+  const handleStatusDragStart = useCallback(
+    (event: ReactDragEvent<HTMLElement>, status: TaskStatus) => {
+      if (!sortableStatusKeys.has(status.toLowerCase()) || draggingTaskId || isUpdatingStatuses) {
+        event.preventDefault();
+        return;
+      }
+      event.stopPropagation();
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', status);
+      event.dataTransfer.setData('text/status', status);
+      setDraggingStatus(status);
+      setDragOverColumn(status);
+      setDragOverAddColumn(false);
+    },
+    [draggingTaskId, isUpdatingStatuses, sortableStatusKeys],
+  );
+
+  const handleStatusDragEnd = useCallback(() => {
+    setDraggingStatus(null);
+    setDragOverColumn(null);
+    setDragOverAddColumn(false);
+  }, []);
+
+  const handleStatusDragOver = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingStatus) {
+        return;
+      }
+      if (!sortableStatusKeys.has(status.toLowerCase())) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (dragOverColumn !== status) {
+        setDragOverColumn(status);
+      }
+      if (isDragOverAddColumn) {
+        setDragOverAddColumn(false);
+      }
+    },
+    [dragOverColumn, draggingStatus, isDragOverAddColumn, sortableStatusKeys],
+  );
+
+  const handleStatusDragLeave = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingStatus) {
+        return;
+      }
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) {
+        return;
+      }
+      setDragOverColumn((current) => (current === status ? null : current));
+    },
+    [draggingStatus],
+  );
+
+  const handleStatusDrop = useCallback(
+    async (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingStatus) {
+        return;
+      }
+      if (!sortableStatusKeys.has(status.toLowerCase()) || draggingStatus === status) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setDragOverColumn(null);
+      setDragOverAddColumn(false);
+
+      const current = draggingStatus;
+      setDraggingStatus(null);
+
+      if (!current) {
+        return;
+      }
+
+      const withoutDragging = statuses.filter((item) => item !== current);
+      const targetIndex = withoutDragging.findIndex((item) => item === status);
+
+      if (targetIndex < 0) {
+        return;
+      }
+
+      const next = [...withoutDragging];
+      next.splice(targetIndex, 0, current);
+
+      const didChange = next.some((value, index) => value !== statuses[index]);
+      if (!didChange) {
+        return;
+      }
+
+      try {
+        await onReorderStatuses(next);
+      } catch {
+        // Parent component surfaces errors.
+      }
+    },
+    [draggingStatus, onReorderStatuses, sortableStatusKeys, statuses],
+  );
+
+  const handleStatusDragEnterAddColumn = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!draggingStatus) {
+        return;
+      }
+      if (!sortableStatusKeys.has(draggingStatus.toLowerCase())) {
+        return;
+      }
+      event.preventDefault();
+      setDragOverColumn(null);
+      setDragOverAddColumn(true);
+    },
+    [draggingStatus, sortableStatusKeys],
+  );
+
+  const handleStatusDropOnAddColumn = useCallback(
+    async (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!draggingStatus) {
+        return;
+      }
+      if (!sortableStatusKeys.has(draggingStatus.toLowerCase())) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+
+      const current = draggingStatus;
+      setDraggingStatus(null);
+      setDragOverAddColumn(false);
+
+      if (!current || statuses[statuses.length - 1] === current) {
+        return;
+      }
+
+      const next = statuses.filter((item) => item !== current);
+      if (next.length === statuses.length) {
+        return;
+      }
+      next.push(current);
+
+      const didChange = next.some((value, index) => value !== statuses[index]);
+      if (!didChange) {
+        return;
+      }
+
+      try {
+        await onReorderStatuses(next);
+      } catch {
+        // Parent component surfaces errors.
+      }
+    },
+    [draggingStatus, onReorderStatuses, sortableStatusKeys, statuses],
+  );
+
+  const handleStatusDragLeaveAddColumn = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!draggingStatus) {
+        return;
+      }
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) {
+        return;
+      }
+      setDragOverAddColumn(false);
+    },
+    [draggingStatus],
+  );
+
   return (
     <div className="board__columns">
       {statusOptions.map((column) => {
@@ -264,14 +442,52 @@ export const TaskBoard = ({
 
         const isDragTarget = Boolean(draggingTaskId) && dragOverStatus === column.key;
 
+        const isSortable = sortableStatusKeys.has(column.key.toLowerCase());
+        const isColumnDragTarget =
+          Boolean(draggingStatus) && dragOverColumn === column.key && draggingStatus !== column.key;
+        const isColumnDragging = draggingStatus === column.key;
+
         return (
           <div
-            className={`board__column${isDragTarget ? ' board__column--droppable' : ''}`}
+            className={`board__column${
+              isDragTarget ? ' board__column--droppable' : ''
+            }${isColumnDragTarget ? ' board__column--sortable-target' : ''}${
+              isColumnDragging ? ' board__column--dragging' : ''
+            }`}
             key={column.key}
+            onDragOver={(event) => handleStatusDragOver(event, column.key)}
+            onDragEnter={(event) => handleStatusDragOver(event, column.key)}
+            onDragLeave={(event) => handleStatusDragLeave(event, column.key)}
+            onDrop={(event) => handleStatusDrop(event, column.key)}
           >
-            <div className="board__column-header">
+            <div
+              className={`board__column-header${isSortable ? ' board__column-header--draggable' : ''}`}
+              draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
+              onDragStart={(event) => handleStatusDragStart(event, column.key)}
+              onDragEnd={handleStatusDragEnd}
+              data-column-drag-handle={isSortable ? 'true' : undefined}
+            >
               <h2>{column.label}</h2>
-              <span className="board__count">{columnTasks.length}</span>
+              <div className="board__column-actions">
+                <span className="board__count">{columnTasks.length}</span>
+                {isSortable ? (
+                  <button
+                    type="button"
+                    className="board__column-drag"
+                    aria-label={`Reorder ${column.label} column`}
+                    draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
+                    onDragStart={(event) => handleStatusDragStart(event, column.key)}
+                    onDragEnd={handleStatusDragEnd}
+                    >
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path
+                        fill="currentColor"
+                        d="M7 10h10v2H7v-2Zm0-4h10v2H7V6Zm0 8h10v2H7v-2Zm0 4h10v2H7v-2Z"
+                      />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
             </div>
             <div
               className="board__cards"
@@ -366,7 +582,15 @@ export const TaskBoard = ({
           </div>
         );
       })}
-      <div className="board__column board__column--add-status">
+      <div
+        className={`board__column board__column--add-status${
+          isDragOverAddColumn ? ' board__column--add-status-target' : ''
+        }`}
+        onDragOver={handleStatusDragEnterAddColumn}
+        onDragEnter={handleStatusDragEnterAddColumn}
+        onDragLeave={handleStatusDragLeaveAddColumn}
+        onDrop={handleStatusDropOnAddColumn}
+      >
         {isAddingStatus ? (
           <form className="board__add-status-form" onSubmit={handleAddStatusSubmit}>
             <input

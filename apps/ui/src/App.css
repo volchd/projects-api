@@ -713,10 +713,24 @@
   box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.22);
 }
 
+.board__column--dragging {
+  opacity: 0.6;
+}
+
+.board__column--sortable-target {
+  border-color: #94a3ff;
+  box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.18);
+}
+
 .board__column--add-status {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.board__column--add-status-target {
+  border-color: #94a3ff;
+  box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.18);
 }
 
 .board__column-header {
@@ -726,9 +740,27 @@
   color: #1f3556;
 }
 
+.board__column-header--draggable {
+  gap: 16px;
+}
+
+.board__column-header[draggable='true'] {
+  cursor: grab;
+}
+
+.board__column-header[draggable='true']:active {
+  cursor: grabbing;
+}
+
 .board__column-header h2 {
   margin: 0;
   font-size: 1.05rem;
+}
+
+.board__column-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .board__count {
@@ -742,6 +774,37 @@
   color: #334155;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.board__column-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: grab;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.board__column-drag svg {
+  width: 20px;
+  height: 20px;
+}
+
+.board__column-drag:active {
+  cursor: grabbing;
+}
+
+.board__column-drag:hover,
+.board__column-drag:focus-visible {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+  outline: none;
 }
 
 .board__cards {
