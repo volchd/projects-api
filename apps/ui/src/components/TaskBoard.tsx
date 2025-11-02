@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { DragEvent as ReactDragEvent } from 'react';
 import type { Task, TaskStatus } from '../types';
 import { TaskEditor } from './TaskEditor';
 
@@ -39,6 +40,8 @@ export const TaskBoard = ({
 }: TaskBoardProps) => {
   const [activeCreateStatus, setActiveCreateStatus] = useState<TaskStatus | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
 
   const tasksByStatus = useMemo(() => {
     return tasks.reduce<Record<TaskStatus, Task[]>>(
@@ -48,6 +51,13 @@ export const TaskBoard = ({
       },
       { TODO: [], 'IN PROGRESS': [], COMPLETE: [] },
     );
+  }, [tasks]);
+
+  const tasksById = useMemo(() => {
+    return tasks.reduce<Record<string, Task>>((acc, task) => {
+      acc[task.taskId] = task;
+      return acc;
+    }, {});
   }, [tasks]);
 
   useEffect(() => {
@@ -88,6 +98,74 @@ export const TaskBoard = ({
 
   const isCreating = (status: TaskStatus) => creatingStatus === status;
 
+  const handleDragStart = useCallback((event: ReactDragEvent<HTMLElement>, taskId: string) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', taskId);
+    setDraggingTaskId(taskId);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingTaskId(null);
+    setDragOverStatus(null);
+  }, []);
+
+  const handleColumnDragOver = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (dragOverStatus !== status) {
+        setDragOverStatus(status);
+      }
+    },
+    [dragOverStatus, draggingTaskId],
+  );
+
+  const handleColumnDragLeave = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) {
+        return;
+      }
+      setDragOverStatus((current) => (current === status ? null : current));
+    },
+    [draggingTaskId],
+  );
+
+  const handleDrop = useCallback(
+    async (event: ReactDragEvent<HTMLDivElement>, status: TaskStatus) => {
+      if (!draggingTaskId) {
+        return;
+      }
+
+      event.preventDefault();
+      setDragOverStatus(null);
+
+      const task = tasksById[draggingTaskId];
+      setDraggingTaskId(null);
+
+      if (!task || task.status === status) {
+        return;
+      }
+
+      try {
+        await onUpdateTask(task.taskId, {
+          name: task.name,
+          description: task.description,
+          status,
+        });
+      } catch {
+        // Ignore errors; parent surfaces them.
+      }
+    },
+    [draggingTaskId, onUpdateTask, tasksById],
+  );
+
   return (
     <div className="board__columns">
       {TASK_COLUMNS.map((column) => {
@@ -97,13 +175,24 @@ export const TaskBoard = ({
         const showLoadingState = isLoading && columnTasks.length === 0;
         const showErrorState = error && columnTasks.length === 0;
 
+        const isDragTarget = Boolean(draggingTaskId) && dragOverStatus === column.key;
+
         return (
-          <div className="board__column" key={column.key}>
+          <div
+            className={`board__column${isDragTarget ? ' board__column--droppable' : ''}`}
+            key={column.key}
+          >
             <div className="board__column-header">
               <h2>{column.label}</h2>
               <span className="board__count">{columnTasks.length}</span>
             </div>
-            <div className="board__cards">
+            <div
+              className="board__cards"
+              onDragOver={(event) => handleColumnDragOver(event, column.key)}
+              onDragEnter={(event) => handleColumnDragOver(event, column.key)}
+              onDragLeave={(event) => handleColumnDragLeave(event, column.key)}
+              onDrop={(event) => handleDrop(event, column.key)}
+            >
               {activeCreateStatus === column.key ? (
                 <TaskEditor
                   mode="create"
@@ -140,7 +229,16 @@ export const TaskBoard = ({
                     }}
                   />
                 ) : (
-                  <article key={task.taskId} className="task-card">
+                  <article
+                    key={task.taskId}
+                    className={`task-card${
+                      draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
+                    }`}
+                    draggable
+                    onDragStart={(event) => handleDragStart(event, task.taskId)}
+                    onDragEnd={handleDragEnd}
+                    aria-grabbed={draggingTaskId === task.taskId}
+                  >
                     <header>
                       <h3>{task.name}</h3>
                       <button
