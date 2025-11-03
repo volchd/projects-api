@@ -220,7 +220,19 @@
 }
 
 .sidebar__project--active .sidebar__project-button {
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.sidebar__project-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar__project:hover .sidebar__project-actions {
+  opacity: 1;
 }
 
 .sidebar__project-action-button {
@@ -250,10 +262,6 @@
 .sidebar__project-action-button svg {
   width: 16px;
   height: 16px;
-}
-
-.sidebar__project-action-button--danger {
-  color: #dc2626;
 }
 
 .sidebar__project-action-button--danger:hover:not(:disabled) {
@@ -438,14 +446,14 @@
 
 .board__header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 2.25rem;
+  font-weight: 800;
   color: #111c2d;
 }
 
 .board__header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .board__alert {
@@ -783,6 +791,7 @@
 .board__column-header h2 {
   margin: 0;
   font-size: 1.05rem;
+  color: #111c2d;
 }
 
 .board__column-actions {
@@ -798,10 +807,10 @@
   min-width: 28px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: #e2e8f6;
+  background: #edf2ff;
   color: #334155;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .board__column-drag {
