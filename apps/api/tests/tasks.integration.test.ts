@@ -451,4 +451,55 @@ describe('tasks integration', () => {
 
     expect(getAfterDelete.statusCode).toBe(404);
   });
+
+  it('removes all project tasks when deleting the project', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const firstTask = await createTask(project!.id, { name: 'First cascading task' });
+    expect(firstTask.statusCode).toBe(201);
+    createdTaskIds.push(firstTask.task.taskId);
+
+    const secondTask = await createTask(project!.id, { name: 'Second cascading task' });
+    expect(secondTask.statusCode).toBe(201);
+    createdTaskIds.push(secondTask.task.taskId);
+
+    const projectId = project!.id;
+
+    const deleteProjectResponse = await removeProjectHandler(
+      baseEvent({
+        pathParameters: { id: projectId },
+      }),
+    );
+
+    expect(deleteProjectResponse.statusCode).toBe(204);
+
+    project = undefined;
+    createdTaskIds.length = 0;
+
+    const listResponse = await listTasksHandler(
+      baseEvent({
+        pathParameters: { projectId },
+      }),
+    );
+
+    expect(listResponse.statusCode).toBe(404);
+
+    const getFirstTask = await getTaskHandler(
+      baseEvent({
+        pathParameters: { projectId, taskId: firstTask.task.taskId },
+      }),
+    );
+
+    expect(getFirstTask.statusCode).toBe(404);
+
+    const getSecondTask = await getTaskHandler(
+      baseEvent({
+        pathParameters: { projectId, taskId: secondTask.task.taskId },
+      }),
+    );
+
+    expect(getSecondTask.statusCode).toBe(404);
+  });
 });

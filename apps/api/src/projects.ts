@@ -269,6 +269,43 @@ const loadProject = async (id: string): Promise<Record<string, unknown> | undefi
   return res.Item as Record<string, unknown> | undefined;
 };
 
+const deleteProjectTasks = async (pk: string): Promise<void> => {
+  let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
+
+  do {
+    const res = await ddbDocClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :taskPrefix)',
+        ExpressionAttributeValues: {
+          ':pk': pk,
+          ':taskPrefix': TASK_KEY_PREFIX,
+        },
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }),
+    );
+
+    const taskDeletes = (res.Items ?? [])
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .filter((item) => isTaskSortKey(item.SK))
+      .map((item) =>
+        ddbDocClient.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: pk, SK: String(item.SK) },
+          }),
+        ),
+      );
+
+    if (taskDeletes.length) {
+      await Promise.all(taskDeletes);
+    }
+
+    const lastEvaluatedKey = res.LastEvaluatedKey as Record<string, NativeAttributeValue> | undefined;
+    exclusiveStartKey = lastEvaluatedKey && Object.keys(lastEvaluatedKey).length ? lastEvaluatedKey : undefined;
+  } while (exclusiveStartKey);
+};
+
 export const create = async (
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyStructuredResultV2> => {
@@ -458,32 +495,7 @@ export const remove = async (
       return json(404, { message: 'Not found' });
     }
 
-    const taskRes = await ddbDocClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :taskPrefix)',
-        ExpressionAttributeValues: {
-          ':pk': pk,
-          ':taskPrefix': TASK_KEY_PREFIX,
-        },
-      }),
-    );
-
-    const taskDeletes = (taskRes.Items ?? [])
-      .filter((item): item is Record<string, unknown> => Boolean(item))
-      .filter((item) => isTaskSortKey(item.SK))
-      .map((item) =>
-        ddbDocClient.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: pk, SK: String(item.SK) },
-          }),
-        ),
-      );
-
-    if (taskDeletes.length) {
-      await Promise.all(taskDeletes);
-    }
+    await deleteProjectTasks(pk);
 
     await ddbDocClient.send(
       new DeleteCommand({

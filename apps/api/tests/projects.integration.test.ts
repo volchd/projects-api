@@ -17,6 +17,11 @@ import {
   vi,
 } from 'vitest';
 import { create, get, listByUser, remove, update } from '../src/projects';
+import {
+  create as createTask,
+  get as getTask,
+  listByProject as listTasksByProject,
+} from '../src/tasks';
 import { resolveUserId } from '../src/auth';
 import { ddbDocClient } from '../src/dynamodb';
 import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
@@ -62,6 +67,16 @@ interface ProjectRecord extends ProjectAttributes {
 
 interface ProjectListResponse {
   items: ProjectRecord[];
+}
+
+interface TaskRecord {
+  projectId: string;
+  taskId: string;
+  name: string;
+  description: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const createProject = async (
@@ -370,6 +385,19 @@ describe('projects integration', () => {
       }
 
       const projectId = project!.id;
+      const createdTaskResponse = await createTask(
+        baseEvent({
+          pathParameters: { projectId },
+          body: JSON.stringify({
+            name: 'Task to delete with project',
+            description: 'integration clean up',
+          }),
+        }),
+      );
+
+      expect(createdTaskResponse.statusCode).toBe(201);
+      const createdTask = parseBody<TaskRecord>(createdTaskResponse.body);
+
       const deleteResponse = await remove(
         baseEvent({
           pathParameters: { id: projectId },
@@ -386,6 +414,22 @@ describe('projects integration', () => {
       );
 
       expect(getAfterDeleteResponse.statusCode).toBe(404);
+
+      const listTasksResponse = await listTasksByProject(
+        baseEvent({
+          pathParameters: { projectId },
+        }),
+      );
+
+      expect(listTasksResponse.statusCode).toBe(404);
+
+      const getTaskResponse = await getTask(
+        baseEvent({
+          pathParameters: { projectId, taskId: createdTask.taskId },
+        }),
+      );
+
+      expect(getTaskResponse.statusCode).toBe(404);
     });
   });
 });

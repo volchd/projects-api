@@ -575,6 +575,83 @@ describe('remove', () => {
     });
   });
 
+  it('removes any tasks for the project before deleting it', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          name: 'Existing',
+          description: null,
+        },
+      })
+      .mockResolvedValueOnce({
+        Items: [
+          { PK: 'PROJECT#project-1', SK: 'TASK#task-1' },
+          { PK: 'PROJECT#project-1', SK: 'TASK#task-2' },
+        ],
+        LastEvaluatedKey: { PK: 'PROJECT#project-1', SK: 'TASK#task-2' },
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ Items: [] })
+      .mockResolvedValueOnce({});
+
+    const response = await remove(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+      }),
+    );
+
+    expect(response.statusCode).toBe(204);
+    expect(sendMock).toHaveBeenCalledTimes(6);
+
+    const firstQuery = sendMock.mock.calls[1][0] as QueryCommand;
+    expect(firstQuery).toBeInstanceOf(QueryCommand);
+    expect(firstQuery.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :taskPrefix)',
+      ExpressionAttributeValues: {
+        ':pk': 'PROJECT#project-1',
+        ':taskPrefix': 'TASK#',
+      },
+    });
+
+    const deleteTask1 = sendMock.mock.calls[2][0] as DeleteCommand;
+    const deleteTask2 = sendMock.mock.calls[3][0] as DeleteCommand;
+    expect(deleteTask1).toBeInstanceOf(DeleteCommand);
+    expect(deleteTask2).toBeInstanceOf(DeleteCommand);
+    expect(deleteTask1.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      Key: { PK: 'PROJECT#project-1', SK: 'TASK#task-1' },
+    });
+    expect(deleteTask2.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      Key: { PK: 'PROJECT#project-1', SK: 'TASK#task-2' },
+    });
+
+    const secondQuery = sendMock.mock.calls[4][0] as QueryCommand;
+    expect(secondQuery).toBeInstanceOf(QueryCommand);
+    expect(secondQuery.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :taskPrefix)',
+      ExpressionAttributeValues: {
+        ':pk': 'PROJECT#project-1',
+        ':taskPrefix': 'TASK#',
+      },
+      ExclusiveStartKey: { PK: 'PROJECT#project-1', SK: 'TASK#task-2' },
+    });
+
+    const deleteProjectCommand = sendMock.mock.calls[5][0] as DeleteCommand;
+    expect(deleteProjectCommand).toBeInstanceOf(DeleteCommand);
+    expect(deleteProjectCommand.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
+    });
+  });
+
   it('returns 404 when project is missing', async () => {
     sendMock.mockResolvedValueOnce({ Item: undefined });
 
