@@ -130,7 +130,7 @@ export const TaskBoard = ({
       return;
     }
 
-    let hideTimeout: ReturnType<typeof window.setTimeout> | null = null;
+    let hideTimeout: number | null = null;
 
     const handleScroll = () => {
       setIsColumnsScrolling((current) => {
