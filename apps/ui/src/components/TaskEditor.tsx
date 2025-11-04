@@ -61,6 +61,7 @@ export const TaskEditor = ({
   }, [isSubmitting, mode]);
 
   const deleteLabel = isDeleting ? 'Deleting…' : 'Delete';
+  const showDescriptionField = mode === 'edit';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -88,13 +89,15 @@ export const TaskEditor = ({
         placeholder="Task title"
         disabled={isSubmitting || isDeleting}
       />
-      <textarea
-        value={values.description}
-        onChange={(event) => setValues((prev) => ({ ...prev, description: event.target.value }))}
-        placeholder="Description (optional)"
-        disabled={isSubmitting || isDeleting}
-        rows={3}
-      />
+      {showDescriptionField ? (
+        <textarea
+          value={values.description}
+          onChange={(event) => setValues((prev) => ({ ...prev, description: event.target.value }))}
+          placeholder="Description (optional)"
+          disabled={isSubmitting || isDeleting}
+          rows={3}
+        />
+      ) : null}
       {error ? (
         <div className="task-editor__error" role="alert">
           {error}
