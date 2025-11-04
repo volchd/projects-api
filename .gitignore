@@ -9,3 +9,4 @@ dist/
 **/.esbuild/
 *.log
 apps/ui/.vite
+apps/ui/tsconfig.tsbuildinfo

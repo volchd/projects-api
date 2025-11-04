@@ -44,6 +44,9 @@ function App() {
   const [isTaskModalOpen, setTaskModalOpen] = useState(false);
   const [taskModalSubmitting, setTaskModalSubmitting] = useState(false);
   const [taskModalError, setTaskModalError] = useState<string | null>(null);
+  const [taskEditModalId, setTaskEditModalId] = useState<string | null>(null);
+  const [taskEditModalSubmitting, setTaskEditModalSubmitting] = useState(false);
+  const [taskEditModalError, setTaskEditModalError] = useState<string | null>(null);
   const taskDeletePromiseRef = useRef<{ resolve: () => void; reject: (reason?: unknown) => void } | null>(null);
 
   const sortedProjects = useMemo(() => {
@@ -96,6 +99,12 @@ function App() {
     }
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    setTaskEditModalId(null);
+    setTaskEditModalError(null);
+    setTaskEditModalSubmitting(false);
+  }, [selectedProjectId]);
+
   const {
     tasks,
     isLoading: tasksLoading,
@@ -108,6 +117,25 @@ function App() {
     updateTask,
     deleteTask,
   } = useTasks(selectedProjectId, activeStatuses);
+
+  const taskBeingEdited = useMemo(
+    () =>
+      taskEditModalId
+        ? tasks.find((task) => task.taskId === taskEditModalId) ?? null
+        : null,
+    [taskEditModalId, tasks],
+  );
+
+  useEffect(() => {
+    if (!taskEditModalId) {
+      return;
+    }
+    if (!taskBeingEdited) {
+      setTaskEditModalId(null);
+      setTaskEditModalError(null);
+      setTaskEditModalSubmitting(false);
+    }
+  }, [taskBeingEdited, taskEditModalId]);
 
   const commandItems = useMemo(
     () => [
@@ -425,6 +453,48 @@ function App() {
     [updateTask],
   );
 
+  const handleTaskEditRequest = useCallback(
+    (taskId: string) => {
+      const task = tasks.find((item) => item.taskId === taskId);
+      if (!task) {
+        return;
+      }
+      resetErrors();
+      setTaskEditModalId(taskId);
+      setTaskEditModalError(null);
+      setTaskEditModalSubmitting(false);
+    },
+    [resetErrors, tasks],
+  );
+
+  const handleTaskEditModalSubmit = useCallback(
+    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+      if (!taskEditModalId) {
+        return;
+      }
+      try {
+        setTaskEditModalSubmitting(true);
+        setTaskEditModalError(null);
+        await handleTaskUpdate(taskEditModalId, values);
+        setTaskEditModalId(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
+        setTaskEditModalError(message);
+      } finally {
+        setTaskEditModalSubmitting(false);
+      }
+    },
+    [handleTaskUpdate, taskEditModalId],
+  );
+
+  const handleTaskEditModalCancel = useCallback(() => {
+    if (taskEditModalSubmitting) {
+      return;
+    }
+    setTaskEditModalId(null);
+    setTaskEditModalError(null);
+  }, [taskEditModalSubmitting]);
+
   const handleTaskDeleteRequest = useCallback(
     (taskId: string) => {
       const task = tasks.find((item) => item.taskId === taskId);
@@ -543,9 +613,9 @@ function App() {
                 isUpdatingStatuses={isUpdatingSelectedProject}
                 onCreateTask={handleTaskCreate}
                 onUpdateTask={handleTaskUpdate}
-                onDeleteTask={handleTaskDeleteRequest}
                 onAddStatus={handleAddStatus}
                 onReorderStatuses={handleReorderStatuses}
+                onEditTask={handleTaskEditRequest}
               />
             ) : (
               <TaskList
@@ -559,7 +629,7 @@ function App() {
                 deletingTaskId={deletingTaskId}
                 onCreateTask={handleTaskCreate}
                 onUpdateTask={handleTaskUpdate}
-                onDeleteTask={handleTaskDeleteRequest}
+                onEditTask={handleTaskEditRequest}
               />
             )
           ) : null}
@@ -650,6 +720,56 @@ function App() {
           onSubmit={handleTaskModalSubmit}
           onCancel={handleTaskModalCancel}
         />
+      </Modal>
+
+      <Modal
+        open={Boolean(taskBeingEdited)}
+        title="Edit task"
+        description={
+          taskBeingEdited && selectedProject
+            ? `Update ${taskBeingEdited.name} in ${selectedProject.name}`
+            : undefined
+        }
+        onClose={handleTaskEditModalCancel}
+        isDismissDisabled={
+          taskEditModalSubmitting ||
+          (taskBeingEdited ? deletingTaskId === taskBeingEdited.taskId : false)
+        }
+      >
+        {taskBeingEdited ? (
+          <TaskEditor
+            mode="edit"
+            status={taskBeingEdited.status}
+            statuses={statusOptionsForModal}
+            initialValues={{
+              name: taskBeingEdited.name,
+              description: taskBeingEdited.description,
+            }}
+            isSubmitting={
+              taskEditModalSubmitting || updatingTaskId === taskBeingEdited.taskId
+            }
+            isDeleting={deletingTaskId === taskBeingEdited.taskId}
+            error={taskEditModalError}
+            onSubmit={handleTaskEditModalSubmit}
+            onCancel={handleTaskEditModalCancel}
+            onDelete={async () => {
+              try {
+                setTaskEditModalError(null);
+                await handleTaskDeleteRequest(taskBeingEdited.taskId);
+                setTaskEditModalId(null);
+              } catch (err) {
+                if (err instanceof Error) {
+                  if (err.message === 'Cancelled' || err.message === 'Replaced') {
+                    return;
+                  }
+                  setTaskEditModalError(err.message);
+                  return;
+                }
+                setTaskEditModalError(UNKNOWN_ERROR);
+              }
+            }}
+          />
+        ) : null}
       </Modal>
     </div>
   );

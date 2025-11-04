@@ -21,9 +21,9 @@ type TaskBoardProps = {
   isUpdatingStatuses: boolean;
   onCreateTask: (values: TaskEditorValues) => Promise<void>;
   onUpdateTask: (taskId: string, values: TaskEditorValues) => Promise<void>;
-  onDeleteTask: (taskId: string) => Promise<void>;
   onAddStatus: (status: string) => Promise<void>;
   onReorderStatuses: (statuses: readonly TaskStatus[]) => Promise<void>;
+  onEditTask: (taskId: string) => void;
 };
 
 export const TaskBoard = ({
@@ -37,12 +37,11 @@ export const TaskBoard = ({
   isUpdatingStatuses,
   onCreateTask,
   onUpdateTask,
-  onDeleteTask,
   onAddStatus,
   onReorderStatuses,
+  onEditTask,
 }: TaskBoardProps) => {
   const [activeCreateStatus, setActiveCreateStatus] = useState<TaskStatus | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
   const [draggingStatus, setDraggingStatus] = useState<TaskStatus | null>(null);
@@ -104,15 +103,6 @@ export const TaskBoard = ({
   }, [tasks]);
 
   useEffect(() => {
-    if (!editingTaskId) {
-      return;
-    }
-    if (!tasks.some((task) => task.taskId === editingTaskId)) {
-      setEditingTaskId(null);
-    }
-  }, [editingTaskId, tasks]);
-
-  useEffect(() => {
     if (activeCreateStatus && !orderedStatuses.includes(activeCreateStatus)) {
       setActiveCreateStatus(null);
     }
@@ -165,24 +155,6 @@ export const TaskBoard = ({
       setActiveCreateStatus(null);
     } catch {
       // Leave the editor open; the parent component will surface the error.
-    }
-  };
-
-  const handleEditSubmit = async (taskId: string, values: TaskEditorValues) => {
-    try {
-      await onUpdateTask(taskId, values);
-      setEditingTaskId(null);
-    } catch {
-      // Keep editor open on failure.
-    }
-  };
-
-  const handleDelete = async (taskId: string) => {
-    try {
-      await onDeleteTask(taskId);
-      setEditingTaskId(null);
-    } catch {
-      // Ignore errors here; parent handles messaging.
     }
   };
 
@@ -559,64 +531,45 @@ export const TaskBoard = ({
               {showEmptyState ? (
                 <div className="board__placeholder board__placeholder--muted">No tasks yet.</div>
               ) : null}
-              {columnTasks.map((task) =>
-                editingTaskId === task.taskId ? (
-                  <TaskEditor
-                    key={task.taskId}
-                    mode="edit"
-                    status={task.status}
-                    statuses={statusOptions}
-                    initialValues={{ name: task.name, description: task.description }}
-                    isSubmitting={updatingTaskId === task.taskId}
-                    isDeleting={deletingTaskId === task.taskId}
-                    onSubmit={async (values) => {
-                      await handleEditSubmit(task.taskId, values);
-                    }}
-                    onCancel={() => setEditingTaskId(null)}
-                    onDelete={async () => {
-                      await handleDelete(task.taskId);
-                    }}
-                  />
-                ) : (
-                  <article
-                    key={task.taskId}
-                    className={`task-card${
-                      draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
-                    }`}
-                    draggable
-                    onDragStart={(event) => handleDragStart(event, task.taskId)}
-                    onDragEnd={handleDragEnd}
-                    aria-grabbed={draggingTaskId === task.taskId}
-                  >
-                    <header>
-                      <h3>{task.name}</h3>
-                      <button
-                        type="button"
-                        aria-label={`Edit ${task.name}`}
-                        onClick={() => {
-                          setActiveCreateStatus(null);
-                          setEditingTaskId(task.taskId);
-                        }}
-                      >
-                        <svg aria-hidden="true" viewBox="0 0 24 24">
-                          <path
-                            fill="currentColor"
-                            d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
-                          />
-                        </svg>
-                      </button>
-                    </header>
-                    {task.description ? <p>{task.description}</p> : null}
-                  </article>
-                ),
-              )}
+              {columnTasks.map((task) => (
+                <article
+                  key={task.taskId}
+                  className={`task-card${
+                    draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
+                  }`}
+                  draggable
+                  onDragStart={(event) => handleDragStart(event, task.taskId)}
+                  onDragEnd={handleDragEnd}
+                  aria-grabbed={draggingTaskId === task.taskId}
+                >
+                  <header>
+                    <h3>{task.name}</h3>
+                    <button
+                      type="button"
+                      aria-label={`Edit ${task.name}`}
+                      onClick={() => {
+                        setActiveCreateStatus(null);
+                        onEditTask(task.taskId);
+                      }}
+                      disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
+                        />
+                      </svg>
+                    </button>
+                  </header>
+                  {task.description ? <p>{task.description}</p> : null}
+                </article>
+              ))}
             </div>
             {activeCreateStatus === column.key ? null : (
               <button
                 type="button"
                 className="board__add-task"
                 onClick={() => {
-                  setEditingTaskId(null);
                   setActiveCreateStatus(column.key);
                 }}
                 disabled={Boolean(creatingStatus)}
