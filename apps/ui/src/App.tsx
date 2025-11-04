@@ -138,22 +138,35 @@ function App() {
   }, [taskBeingEdited, taskEditModalId]);
 
   const commandItems = useMemo(
-    () => [
-      {
-        id: 'create-project',
-        label: 'Create project',
-        description: 'Start a new project',
-        disabled: false,
-      },
-      {
-        id: 'create-task',
-        label: 'Create task',
-        description: selectedProject
-          ? `Add a task to ${selectedProject.name}`
-          : 'Select a project to enable',
-        disabled: !selectedProject,
-      },
-    ],
+    () => {
+      const shortcutLabel = (() => {
+        if (typeof navigator === 'undefined') {
+          return 'Cmd+Option+T';
+        }
+        const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+        const platform = nav.userAgentData?.platform ?? nav.platform ?? '';
+        const normalized = platform.toLowerCase();
+        const isApple = normalized.includes('mac') || normalized.includes('iphone') || normalized.includes('ipad');
+        return isApple ? 'Cmd+Option+T' : 'Ctrl+Alt+T';
+      })();
+
+      return [
+        {
+          id: 'create-project',
+          label: 'Create project',
+          description: 'Start a new project',
+          disabled: false,
+        },
+        {
+          id: 'create-task',
+          label: `Create task (${shortcutLabel})`,
+          description: selectedProject
+            ? `Add a task to ${selectedProject.name}`
+            : `Select a project to enable`,
+          disabled: !selectedProject,
+        },
+      ];
+    },
     [selectedProject],
   );
 
@@ -184,6 +197,16 @@ function App() {
     resetErrors();
   }, [resetErrors]);
 
+  const handleOpenTaskModal = useCallback(() => {
+    if (!selectedProjectId) {
+      return;
+    }
+    resetErrors();
+    setTaskModalError(null);
+    setTaskModalSubmitting(false);
+    setTaskModalOpen(true);
+  }, [resetErrors, selectedProjectId]);
+
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
       const isModifierPressed = event.metaKey || event.ctrlKey;
@@ -200,9 +223,18 @@ function App() {
         return;
       }
 
-      if (event.key.toLowerCase() === 'p') {
+      if (event.code === 'KeyP') {
         event.preventDefault();
         handleCreateRequest();
+        return;
+      }
+
+      if (event.code === 'KeyT') {
+        if (!event.altKey) {
+          return;
+        }
+        event.preventDefault();
+        handleOpenTaskModal();
       }
     };
 
@@ -210,7 +242,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeydown);
     };
-  }, [handleCreateRequest]);
+  }, [handleCreateRequest, handleOpenTaskModal]);
 
   const handleEditRequest = useCallback(
     (project: Project) => {
@@ -233,16 +265,6 @@ function App() {
     setProjectFormMode(null);
     resetErrors();
   }, [resetErrors]);
-
-  const handleOpenTaskModal = useCallback(() => {
-    if (!selectedProjectId) {
-      return;
-    }
-    resetErrors();
-    setTaskModalError(null);
-    setTaskModalSubmitting(false);
-    setTaskModalOpen(true);
-  }, [resetErrors, selectedProjectId]);
 
   const handleTaskModalCancel = useCallback(() => {
     if (taskModalSubmitting) {
