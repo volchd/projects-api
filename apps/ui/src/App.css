@@ -1142,7 +1142,15 @@
   color: #94a3b8;
   padding: 4px;
   border-radius: 8px;
-  transition: background 0.15s ease, color 0.15s ease;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.task-card:hover button,
+.task-card button:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .task-card button:hover {
