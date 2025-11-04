@@ -1,0 +1,28 @@
+name: Undeploy API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  undeploy:
+    name: Undeploy API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+        working-directory: ./apps/api
+
+      - name: Serverless Remove
+        run: npx serverless remove
+        working-directory: ./apps/api
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
