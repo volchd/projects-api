@@ -156,6 +156,34 @@ function App() {
     resetErrors();
   }, [resetErrors]);
 
+  useEffect(() => {
+    const handleKeydown = (event: KeyboardEvent) => {
+      const isModifierPressed = event.metaKey || event.ctrlKey;
+      if (!isModifierPressed) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      const isTypingTarget =
+        tagName === 'input' || tagName === 'textarea' || target?.isContentEditable;
+
+      if (isTypingTarget) {
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        handleCreateRequest();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [handleCreateRequest]);
+
   const handleEditRequest = useCallback(
     (project: Project) => {
       setSelectedProjectId(project.id);
