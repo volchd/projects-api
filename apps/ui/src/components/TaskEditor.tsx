@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { TaskStatus } from '../types';
 
 const EMPTY_DESCRIPTION = '';
@@ -45,6 +45,8 @@ export const TaskEditor = ({
     status,
   });
 
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     setValues({
       name: initialValues?.name ?? '',
@@ -52,6 +54,12 @@ export const TaskEditor = ({
       status,
     });
   }, [initialValues?.name, initialValues?.description, status]);
+
+  useEffect(() => {
+    if (mode === 'create' && !isSubmitting && !isDeleting) {
+      nameInputRef.current?.focus();
+    }
+  }, [mode, isSubmitting, isDeleting]);
 
   const submitLabel = useMemo(() => {
     if (isSubmitting) {
@@ -84,6 +92,7 @@ export const TaskEditor = ({
     <form className="task-editor" onSubmit={handleSubmit}>
       <input
         type="text"
+        ref={nameInputRef}
         value={values.name}
         onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
         placeholder="Task title"
