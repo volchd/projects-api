@@ -137,38 +137,45 @@ function App() {
     }
   }, [taskBeingEdited, taskEditModalId]);
 
-  const commandItems = useMemo(
-    () => {
-      const shortcutLabel = (() => {
-        if (typeof navigator === 'undefined') {
-          return 'Cmd+Option+T';
-        }
-        const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
-        const platform = nav.userAgentData?.platform ?? nav.platform ?? '';
-        const normalized = platform.toLowerCase();
-        const isApple = normalized.includes('mac') || normalized.includes('iphone') || normalized.includes('ipad');
-        return isApple ? 'Cmd+Option+T' : 'Ctrl+Alt+T';
-      })();
+  const commandItems = useMemo(() => {
+    const defaultShortcutLabels = {
+      projectShortcutLabel: 'Cmd+Option+P',
+      taskShortcutLabel: 'Cmd+Option+T',
+    };
 
-      return [
-        {
-          id: 'create-project',
-          label: 'Create project',
-          description: 'Start a new project',
-          disabled: false,
-        },
-        {
-          id: 'create-task',
-          label: `Create task (${shortcutLabel})`,
-          description: selectedProject
-            ? `Add a task to ${selectedProject.name}`
-            : `Select a project to enable`,
-          disabled: !selectedProject,
-        },
-      ];
-    },
-    [selectedProject],
-  );
+    const { projectShortcutLabel, taskShortcutLabel } = (() => {
+      if (typeof navigator === 'undefined') {
+        return defaultShortcutLabels;
+      }
+      const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+      const platform = nav.userAgentData?.platform ?? nav.platform ?? '';
+      const normalized = platform.toLowerCase();
+      const isApple =
+        normalized.includes('mac') || normalized.includes('iphone') || normalized.includes('ipad');
+      if (isApple) {
+        return defaultShortcutLabels;
+      }
+      return {
+        projectShortcutLabel: 'Ctrl+Alt+P',
+        taskShortcutLabel: 'Ctrl+Alt+T',
+      };
+    })();
+
+    return [
+      {
+        id: 'create-project',
+        label: `Create project (${projectShortcutLabel})`,
+        description: 'Start a new project',
+        disabled: false,
+      },
+      {
+        id: 'create-task',
+        label: `Create task (${taskShortcutLabel})`,
+        description: selectedProject ? `Add a task to ${selectedProject.name}` : `Select a project to enable`,
+        disabled: !selectedProject,
+      },
+    ];
+  }, [selectedProject]);
 
   const resetErrors = useCallback(() => {
     setFormError(null);
@@ -209,10 +216,11 @@ function App() {
 
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
-      const isModifierPressed = event.metaKey || event.ctrlKey;
-      if (!isModifierPressed) {
+      const isPrimaryModifier = event.metaKey || event.ctrlKey;
+      if (!isPrimaryModifier) {
         return;
       }
+      const hasAlt = event.altKey;
 
       const target = event.target as HTMLElement | null;
       const tagName = target?.tagName?.toLowerCase();
@@ -224,13 +232,16 @@ function App() {
       }
 
       if (event.code === 'KeyP') {
+        if (!hasAlt) {
+          return;
+        }
         event.preventDefault();
         handleCreateRequest();
         return;
       }
 
       if (event.code === 'KeyT') {
-        if (!event.altKey) {
+        if (!hasAlt) {
           return;
         }
         event.preventDefault();
