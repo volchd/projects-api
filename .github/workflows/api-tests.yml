@@ -1,0 +1,35 @@
+name: API Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Wait for DynamoDB Local
+        run: npx wait-on tcp:8000 -t 30000
+
+      - name: Run tests
+        run: npm --workspace apps/api run test
