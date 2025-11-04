@@ -48,6 +48,54 @@ const toStringOrNull = (value: unknown): string | null | undefined => {
   return typeof value === 'string' ? value : undefined;
 };
 
+type DateField = 'startDate' | 'dueDate';
+
+const normalizeDateInput = (
+  value: unknown,
+  field: DateField,
+  errors: string[],
+): string | null | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    errors.push(`${field} must be a valid ISO 8601 date string if provided`);
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const timestamp = Date.parse(trimmed);
+  if (Number.isNaN(timestamp)) {
+    errors.push(`${field} must be a valid ISO 8601 date string if provided`);
+    return undefined;
+  }
+
+  return new Date(timestamp).toISOString();
+};
+
+const validateDateOrder = (
+  startDate: string | null | undefined,
+  dueDate: string | null | undefined,
+  errors: string[],
+) => {
+  if (
+    typeof startDate === 'string' &&
+    typeof dueDate === 'string' &&
+    new Date(dueDate).getTime() < new Date(startDate).getTime()
+  ) {
+    errors.push('dueDate must be on or after startDate');
+  }
+};
+
 const parseBody = (event: APIGatewayProxyEventV2): ParsedBodyResult => {
   if (!event.body) {
     return {};
@@ -116,6 +164,10 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
   const name = data.name;
   const description = toStringOrNull(data.description);
   let status: TaskStatus | undefined;
+  const hasStartDate = Object.prototype.hasOwnProperty.call(data, 'startDate');
+  const hasDueDate = Object.prototype.hasOwnProperty.call(data, 'dueDate');
+  let startDate: string | null | undefined;
+  let dueDate: string | null | undefined;
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -134,16 +186,38 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
     }
   }
 
+  if (hasStartDate) {
+    startDate = normalizeDateInput(data.startDate, 'startDate', errors);
+  }
+
+  if (hasDueDate) {
+    dueDate = normalizeDateInput(data.dueDate, 'dueDate', errors);
+  }
+
+  if (!errors.length) {
+    validateDateOrder(startDate, dueDate, errors);
+  }
+
   if (errors.length) {
     return { errors };
   }
 
+  const result: CreateTaskPayload = {
+    name: name as string,
+    description,
+    status,
+  };
+
+  if (hasStartDate) {
+    result.startDate = startDate ?? null;
+  }
+
+  if (hasDueDate) {
+    result.dueDate = dueDate ?? null;
+  }
+
   return {
-    value: {
-      name: name as string,
-      description,
-      status,
-    },
+    value: result,
     errors,
   };
 }
@@ -158,6 +232,8 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
 
   const data = payload as Record<string, unknown>;
   const result: UpdateTaskPayload = {};
+  const hasStartDate = Object.prototype.hasOwnProperty.call(data, 'startDate');
+  const hasDueDate = Object.prototype.hasOwnProperty.call(data, 'dueDate');
 
   if ('name' in data && data.name != null) {
     if (typeof data.name === 'string') {
@@ -182,6 +258,24 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
     } else {
       errors.push(`status must be a non-empty string up to ${MAX_PROJECT_STATUS_LENGTH} characters if provided`);
     }
+  }
+
+  if (hasStartDate) {
+    const normalizedStart = normalizeDateInput(data.startDate, 'startDate', errors);
+    if (normalizedStart !== undefined) {
+      result.startDate = normalizedStart;
+    }
+  }
+
+  if (hasDueDate) {
+    const normalizedDue = normalizeDateInput(data.dueDate, 'dueDate', errors);
+    if (normalizedDue !== undefined) {
+      result.dueDate = normalizedDue;
+    }
+  }
+
+  if (!errors.length) {
+    validateDateOrder(result.startDate, result.dueDate, errors);
   }
 
   if (errors.length) {
@@ -231,6 +325,13 @@ const toTaskStatus = (status: unknown): TaskStatus => {
   return DEFAULT_TASK_STATUS;
 };
 
+const toDateValue = (value: unknown): string | null => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  return null;
+};
+
 const toTask = (item: Record<string, unknown> | undefined): Task | undefined => {
   if (!item) {
     return undefined;
@@ -246,6 +347,8 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     name: String(item.name),
     description: (item.description ?? null) as string | null,
     status: toTaskStatus(item.status),
+    startDate: toDateValue(item.startDate),
+    dueDate: toDateValue(item.dueDate),
     createdAt: String(item.createdAt),
     updatedAt: String(item.updatedAt),
   };
@@ -278,6 +381,8 @@ export const create = async (
 
     const fallbackStatus = projectStatuses[0] ?? DEFAULT_TASK_STATUS;
     const targetStatus = value.status ?? fallbackStatus;
+    const startDate = value.startDate ?? null;
+    const dueDate = value.dueDate ?? null;
 
     if (!projectStatuses.includes(targetStatus)) {
       return json(400, {
@@ -297,6 +402,8 @@ export const create = async (
       name: value.name,
       description: value.description ?? null,
       status: targetStatus,
+      startDate,
+      dueDate,
       createdAt: now,
       updatedAt: now,
       entityType: TASK_ENTITY_TYPE,
@@ -451,6 +558,18 @@ export const update = async (
       names.push('#s = :status');
       exprNames['#s'] = 'status';
       exprValues[':status'] = value.status;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'startDate')) {
+      names.push('#sd = :startDate');
+      exprNames['#sd'] = 'startDate';
+      exprValues[':startDate'] = value.startDate ?? null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'dueDate')) {
+      names.push('#dd = :dueDate');
+      exprNames['#dd'] = 'dueDate';
+      exprValues[':dueDate'] = value.dueDate ?? null;
     }
 
     if (names.length === 0) {

@@ -415,13 +415,21 @@ function App() {
   }, [deletingProjectId]);
 
   const handleTaskCreate = useCallback(
-    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+    async (values: {
+      name: string;
+      description: string | null;
+      status: TaskStatus;
+      startDate?: string | null;
+      dueDate?: string | null;
+    }) => {
       try {
         setBoardError(null);
         await createTask({
           name: values.name,
           description: values.description,
           status: values.status,
+          startDate: values.startDate ?? null,
+          dueDate: values.dueDate ?? null,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
@@ -433,7 +441,13 @@ function App() {
   );
 
   const handleTaskModalSubmit = useCallback(
-    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+    async (values: {
+      name: string;
+      description: string | null;
+      status: TaskStatus;
+      startDate?: string | null;
+      dueDate?: string | null;
+    }) => {
       try {
         setTaskModalSubmitting(true);
         setTaskModalError(null);
@@ -442,6 +456,8 @@ function App() {
           name: values.name,
           description: values.description,
           status: values.status,
+          startDate: values.startDate ?? null,
+          dueDate: values.dueDate ?? null,
         });
         setTaskModalOpen(false);
       } catch (err) {
@@ -469,13 +485,24 @@ function App() {
   );
 
   const handleTaskUpdate = useCallback(
-    async (taskId: string, values: { name: string; description: string | null; status: TaskStatus }) => {
+    async (
+      taskId: string,
+      values: {
+        name: string;
+        description: string | null;
+        status: TaskStatus;
+        startDate?: string | null;
+        dueDate?: string | null;
+      },
+    ) => {
       try {
         setBoardError(null);
         await updateTask(taskId, {
           name: values.name,
           description: values.description,
           status: values.status,
+          startDate: values.startDate ?? null,
+          dueDate: values.dueDate ?? null,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
@@ -501,7 +528,13 @@ function App() {
   );
 
   const handleTaskEditModalSubmit = useCallback(
-    async (values: { name: string; description: string | null; status: TaskStatus }) => {
+    async (values: {
+      name: string;
+      description: string | null;
+      status: TaskStatus;
+      startDate?: string | null;
+      dueDate?: string | null;
+    }) => {
       if (!taskEditModalId) {
         return;
       }
@@ -777,6 +810,8 @@ function App() {
             initialValues={{
               name: taskBeingEdited.name,
               description: taskBeingEdited.description,
+              startDate: taskBeingEdited.startDate,
+              dueDate: taskBeingEdited.dueDate,
             }}
             isSubmitting={
               taskEditModalSubmitting || updatingTaskId === taskBeingEdited.taskId

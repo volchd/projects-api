@@ -148,6 +148,8 @@ describe('create', () => {
       name: 'Write docs',
       description: null,
       status: 'TODO',
+      startDate: null,
+      dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -168,6 +170,8 @@ describe('create', () => {
       name: 'Write docs',
       description: null,
       status: 'TODO',
+      startDate: null,
+      dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -290,6 +294,8 @@ describe('get', () => {
       name: 'Existing task',
       description: 'Details',
       status: 'TODO',
+      startDate: null,
+      dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -382,6 +388,8 @@ describe('listByProject', () => {
           name: 'Task A',
           description: null,
           status: 'TODO',
+          startDate: null,
+          dueDate: null,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -391,6 +399,8 @@ describe('listByProject', () => {
           name: 'Task B',
           description: 'details',
           status: 'TODO',
+          startDate: null,
+          dueDate: null,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -549,6 +559,8 @@ describe('update', () => {
       name: 'Updated name',
       description: 'Updated description',
       status: 'IN PROGRESS',
+      startDate: null,
+      dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });

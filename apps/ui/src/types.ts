@@ -15,4 +15,6 @@ export type Task = {
   name: string;
   description: string | null;
   status: TaskStatus;
+  startDate: string | null;
+  dueDate: string | null;
 };

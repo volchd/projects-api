@@ -8,6 +8,8 @@ type TaskEditorValues = {
   name: string;
   description: string | null;
   status: TaskStatus;
+  startDate?: string | null;
+  dueDate?: string | null;
 };
 
 type TaskListProps = {
@@ -161,6 +163,8 @@ export const TaskList = ({
           name: task.name,
           description: task.description,
           status,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
         });
       } catch {
         // Errors surface via parent handlers.

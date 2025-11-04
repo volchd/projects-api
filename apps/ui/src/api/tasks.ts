@@ -5,12 +5,16 @@ export type CreateTaskPayload = {
   name: string;
   description: string | null;
   status?: TaskStatus;
+  startDate?: string | null;
+  dueDate?: string | null;
 };
 
 export type UpdateTaskPayload = {
   name?: string;
   description?: string | null;
   status?: TaskStatus;
+  startDate?: string | null;
+  dueDate?: string | null;
 };
 
 export const fetchTasks = async (projectId: string): Promise<Task[]> => {
@@ -31,6 +35,8 @@ export const createTask = async (projectId: string, payload: CreateTaskPayload) 
       name: payload.name,
       description: payload.description,
       status: payload.status,
+      startDate: payload.startDate ?? null,
+      dueDate: payload.dueDate ?? null,
     }),
   });
 

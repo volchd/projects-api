@@ -3,10 +3,27 @@ import type { TaskStatus } from '../types';
 
 const EMPTY_DESCRIPTION = '';
 
-type TaskEditorValues = {
+const toDateInputValue = (value: string | null | undefined): string => {
+  if (!value) {
+    return '';
+  }
+  return value.slice(0, 10);
+};
+
+type TaskEditorFormState = {
   name: string;
   description: string;
   status: TaskStatus;
+  startDate: string;
+  dueDate: string;
+};
+
+type TaskEditorSubmitValues = {
+  name: string;
+  description: string | null;
+  status: TaskStatus;
+  startDate?: string | null;
+  dueDate?: string | null;
 };
 
 type StatusOption = {
@@ -18,11 +35,11 @@ type TaskEditorProps = {
   mode: 'create' | 'edit';
   status: TaskStatus;
   statuses: readonly StatusOption[];
-  initialValues?: { name: string; description: string | null };
+  initialValues?: { name: string; description: string | null; startDate: string | null; dueDate: string | null };
   isSubmitting: boolean;
   isDeleting?: boolean;
   error?: string | null;
-  onSubmit: (values: { name: string; description: string | null; status: TaskStatus }) => Promise<void> | void;
+  onSubmit: (values: TaskEditorSubmitValues) => Promise<void> | void;
   onCancel: () => void;
   onDelete?: () => Promise<void> | void;
 };
@@ -39,10 +56,12 @@ export const TaskEditor = ({
   onCancel,
   onDelete,
 }: TaskEditorProps) => {
-  const [values, setValues] = useState<TaskEditorValues>({
+  const [values, setValues] = useState<TaskEditorFormState>({
     name: initialValues?.name ?? '',
     description: initialValues?.description ?? EMPTY_DESCRIPTION,
     status,
+    startDate: toDateInputValue(initialValues?.startDate),
+    dueDate: toDateInputValue(initialValues?.dueDate),
   });
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
@@ -52,8 +71,10 @@ export const TaskEditor = ({
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? EMPTY_DESCRIPTION,
       status,
+      startDate: toDateInputValue(initialValues?.startDate),
+      dueDate: toDateInputValue(initialValues?.dueDate),
     });
-  }, [initialValues?.name, initialValues?.description, status]);
+  }, [initialValues?.name, initialValues?.description, initialValues?.startDate, initialValues?.dueDate, status]);
 
   useEffect(() => {
     if (mode === 'create' && !isSubmitting && !isDeleting) {
@@ -70,6 +91,7 @@ export const TaskEditor = ({
 
   const deleteLabel = isDeleting ? 'Deleting…' : 'Delete';
   const showDescriptionField = mode === 'edit';
+  const showDateFields = mode === 'edit';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -79,10 +101,19 @@ export const TaskEditor = ({
       return;
     }
 
+    const startDateValue = values.startDate ? values.startDate : null;
+    const dueDateValue = values.dueDate ? values.dueDate : null;
+
     await onSubmit({
       name: trimmedName,
       description: trimmedDescription ? trimmedDescription : null,
       status: values.status,
+      ...(showDateFields
+        ? {
+            startDate: startDateValue,
+            dueDate: dueDateValue,
+          }
+        : {}),
     });
   };
 
@@ -94,10 +125,38 @@ export const TaskEditor = ({
         type="text"
         ref={nameInputRef}
         value={values.name}
-        onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
-        placeholder="Task title"
-        disabled={isSubmitting || isDeleting}
-      />
+      onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
+      placeholder="Task title"
+      disabled={isSubmitting || isDeleting}
+    />
+    {showDateFields ? (
+      <div className="task-editor__dates">
+        <label className="task-editor__date-field">
+          <span>Start date</span>
+          <input
+            type="date"
+            value={values.startDate}
+            max={values.dueDate || undefined}
+            onChange={(event) =>
+              setValues((prev) => ({ ...prev, startDate: event.target.value }))
+            }
+            disabled={isSubmitting || isDeleting}
+          />
+        </label>
+        <label className="task-editor__date-field">
+          <span>Due date</span>
+          <input
+            type="date"
+            value={values.dueDate}
+            min={values.startDate || undefined}
+            onChange={(event) =>
+              setValues((prev) => ({ ...prev, dueDate: event.target.value }))
+            }
+            disabled={isSubmitting || isDeleting}
+          />
+        </label>
+      </div>
+    ) : null}
       {showDescriptionField ? (
         <textarea
           value={values.description}

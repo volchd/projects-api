@@ -130,6 +130,8 @@ export const useTasks = (projectId: string | null, statuses: readonly TaskStatus
           name: payload.name,
           description: payload.description,
           status: targetStatus,
+          startDate: payload.startDate ?? null,
+          dueDate: payload.dueDate ?? null,
         });
 
         await refresh(currentProjectId);

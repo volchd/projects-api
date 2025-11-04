@@ -73,6 +73,8 @@ interface TaskRecord {
   name: string;
   description: string | null;
   status: string;
+  startDate: string | null;
+  dueDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -254,6 +256,8 @@ describe('tasks integration', () => {
     expect(task.name).toBe('Integration Task');
     expect(task.description).toBe('Created via integration test');
     expect(typeof task.taskId).toBe('string');
+    expect(task.startDate).toBeNull();
+    expect(task.dueDate).toBeNull();
     expect(typeof task.createdAt).toBe('string');
     expect(typeof task.updatedAt).toBe('string');
 
@@ -283,6 +287,47 @@ describe('tasks integration', () => {
     expect(statusCode).toBe(201);
     expect(task.status).toBe('IN QA');
     createdTaskIds.push(task.taskId);
+  });
+
+  it('creates a task with optional start and due dates', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const startDate = '2030-01-05';
+    const dueDate = '2030-01-10';
+    const { statusCode, task } = await createTask(project!.id, {
+      name: 'With schedule',
+      startDate,
+      dueDate,
+    });
+
+    expect(statusCode).toBe(201);
+    expect(task.startDate).toBe(new Date(startDate).toISOString());
+    expect(task.dueDate).toBe(new Date(dueDate).toISOString());
+    createdTaskIds.push(task.taskId);
+  });
+
+  it('rejects creating a task when due date is before the start date', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const response = await createTaskHandler(
+      baseEvent({
+        pathParameters: { projectId: project!.id },
+        body: JSON.stringify({
+          name: 'Invalid schedule',
+          startDate: '2030-01-10',
+          dueDate: '2030-01-05',
+        }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors?: string[] }>(response.body).errors).toContain(
+      'dueDate must be on or after startDate',
+    );
   });
 
   it('retrieves a task by id', async () => {
@@ -369,6 +414,8 @@ describe('tasks integration', () => {
           name: 'Updated task name',
           description: 'Updated description',
           status: 'COMPLETE',
+          startDate: '2035-06-01',
+          dueDate: '2035-06-10',
         }),
       }),
     );
@@ -382,9 +429,36 @@ describe('tasks integration', () => {
       name: 'Updated task name',
       description: 'Updated description',
       status: 'COMPLETE',
+      startDate: new Date('2035-06-01').toISOString(),
+      dueDate: new Date('2035-06-10').toISOString(),
     });
     expect(typeof updated.createdAt).toBe('string');
     expect(typeof updated.updatedAt).toBe('string');
+  });
+
+  it('rejects updating a task when due date is before the start date', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const { statusCode, task } = await createTask(project!.id);
+    expect(statusCode).toBe(201);
+    createdTaskIds.push(task.taskId);
+
+    const response = await updateTaskHandler(
+      baseEvent({
+        pathParameters: { projectId: project!.id, taskId: task.taskId },
+        body: JSON.stringify({
+          startDate: '2035-07-10',
+          dueDate: '2035-07-01',
+        }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors?: string[] }>(response.body).errors).toContain(
+      'dueDate must be on or after startDate',
+    );
   });
 
   it('rejects an update to a status outside of the project set', async () => {
