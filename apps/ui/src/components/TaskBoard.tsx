@@ -140,7 +140,7 @@ export const TaskBoard = ({
         return current;
       });
 
-      if (hideTimeout !== undefined) {
+      if (hideTimeout !== null) {
         window.clearTimeout(hideTimeout);
       }
 
@@ -153,7 +153,7 @@ export const TaskBoard = ({
 
     return () => {
       node.removeEventListener('scroll', handleScroll);
-      if (hideTimeout !== undefined) {
+      if (hideTimeout !== null) {
         window.clearTimeout(hideTimeout);
       }
     };
