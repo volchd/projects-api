@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskPriority, TaskStatus } from '../types';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
@@ -8,6 +8,7 @@ type TaskEditorValues = {
   name: string;
   description: string | null;
   status: TaskStatus;
+  priority: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
 };
@@ -271,6 +272,7 @@ export const TaskBoard = ({
           name: task.name,
           description: task.description,
           status,
+          priority: task.priority,
           startDate: task.startDate,
           dueDate: task.dueDate,
         });

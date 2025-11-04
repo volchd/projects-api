@@ -21,10 +21,16 @@ Task shape:
   "taskId": "task-uuid",
   "name": "Draft docs",
   "description": "optional",
+  "status": "TODO",
+  "priority": "None",
+  "startDate": "ISO timestamp or null",
+  "dueDate": "ISO timestamp or null",
   "createdAt": "ISO timestamp",
   "updatedAt": "ISO timestamp"
 }
 ```
+
+Task priority options: `None`, `Low`, `Normal`, `High`, `Urgent` (default is `None`).
 
 ## Prereqs
 - Node.js 18+ (Node 20 recommended)
@@ -85,7 +91,7 @@ This test provisions a throwaway table in the local instance, exercises the full
 - `POST   /projects/{projectId}/tasks` — create a task under a project (validates project ownership)
 - `GET    /projects/{projectId}/tasks` — list tasks for a project
 - `GET    /projects/{projectId}/tasks/{taskId}` — fetch a single task
-- `PUT    /projects/{projectId}/tasks/{taskId}` — update name/description for a task
+- `PUT    /projects/{projectId}/tasks/{taskId}` — update task fields (name, description, status, priority, start/due dates)
 - `DELETE /projects/{projectId}/tasks/{taskId}` — delete a task
 
 ## Example Requests
@@ -116,7 +122,7 @@ curl -i -X DELETE http://localhost:3000/projects/<id>
 
 Create task:
 ```bash
-curl -s -X POST http://localhost:3000/projects/<projectId>/tasks   -H 'Content-Type: application/json'   -d '{"name":"Draft docs","description":"initial outline"}'
+curl -s -X POST http://localhost:3000/projects/<projectId>/tasks   -H 'Content-Type: application/json'   -d '{"name":"Draft docs","description":"initial outline","priority":"High"}'
 ```
 
 List tasks:

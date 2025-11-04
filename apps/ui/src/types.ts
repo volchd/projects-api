@@ -9,12 +9,15 @@ export type ProjectStatus = string;
 
 export type TaskStatus = ProjectStatus;
 
+export type TaskPriority = 'None' | 'Low' | 'Normal' | 'High' | 'Urgent';
+
 export type Task = {
   projectId: string;
   taskId: string;
   name: string;
   description: string | null;
   status: TaskStatus;
+  priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
 };

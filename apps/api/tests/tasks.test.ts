@@ -27,6 +27,7 @@ vi.mock('node:crypto', () => ({
 import { create, get, listByProject, remove, update } from '../src/tasks';
 import { ddbDocClient } from '../src/dynamodb';
 import { randomUUID } from 'node:crypto';
+import { DEFAULT_TASK_PRIORITY } from '../src/tasks.types';
 
 type MockSend = ReturnType<typeof vi.fn>;
 
@@ -148,6 +149,7 @@ describe('create', () => {
       name: 'Write docs',
       description: null,
       status: 'TODO',
+      priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
@@ -170,6 +172,7 @@ describe('create', () => {
       name: 'Write docs',
       description: null,
       status: 'TODO',
+      priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
@@ -201,10 +204,67 @@ describe('create', () => {
     expect(response.statusCode).toBe(201);
     expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
       status: 'IN PROGRESS',
+      priority: DEFAULT_TASK_PRIORITY,
     });
 
     const putCommand = sendMock.mock.calls[1][0] as PutCommand;
-    expect(putCommand.input.Item).toMatchObject({ status: 'IN PROGRESS' });
+    expect(putCommand.input.Item).toMatchObject({
+      status: 'IN PROGRESS',
+      priority: DEFAULT_TASK_PRIORITY,
+    });
+  });
+
+  it('creates a task with a provided priority', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+        },
+      })
+      .mockResolvedValueOnce({});
+    randomUUIDMock.mockReturnValueOnce('task-789');
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({ name: 'Write docs', priority: 'High' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
+      priority: 'High',
+    });
+
+    const putCommand = sendMock.mock.calls[1][0] as PutCommand;
+    expect(putCommand.input.Item).toMatchObject({ priority: 'High' });
+  });
+
+  it('rejects an invalid priority', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+      },
+    });
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({ name: 'Write docs', priority: 'Critical' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'priority must be one of None, Low, Normal, High, Urgent if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it('rejects a status not configured on the project', async () => {
@@ -294,6 +354,7 @@ describe('get', () => {
       name: 'Existing task',
       description: 'Details',
       status: 'TODO',
+      priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
@@ -388,6 +449,7 @@ describe('listByProject', () => {
           name: 'Task A',
           description: null,
           status: 'TODO',
+          priority: DEFAULT_TASK_PRIORITY,
           startDate: null,
           dueDate: null,
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -399,6 +461,7 @@ describe('listByProject', () => {
           name: 'Task B',
           description: 'details',
           status: 'TODO',
+          priority: DEFAULT_TASK_PRIORITY,
           startDate: null,
           dueDate: null,
           createdAt: '2024-01-01T00:00:00.000Z',
@@ -536,6 +599,7 @@ describe('update', () => {
           name: 'Updated name',
           description: 'Updated description',
           status: 'IN PROGRESS',
+          priority: DEFAULT_TASK_PRIORITY,
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -559,6 +623,7 @@ describe('update', () => {
       name: 'Updated name',
       description: 'Updated description',
       status: 'IN PROGRESS',
+      priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
       createdAt: '2024-01-01T00:00:00.000Z',
@@ -591,6 +656,80 @@ describe('update', () => {
       ':status': 'IN PROGRESS',
     });
     expect(typeof values[':updatedAt']).toBe('string');
+  });
+
+  it('updates priority', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO'],
+        },
+      })
+      .mockResolvedValueOnce({
+        Attributes: {
+          PK: 'PROJECT#project-1',
+          SK: 'TASK#task-1',
+          projectId: 'project-1',
+          taskId: 'task-1',
+          userId: 'demo-user',
+          name: 'Task name',
+          description: null,
+          status: 'TODO',
+          priority: 'Urgent',
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+        },
+      });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+        body: JSON.stringify({ priority: 'Urgent' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
+      priority: 'Urgent',
+    });
+
+    const command = sendMock.mock.calls[1][0] as UpdateCommand;
+    expect(command.input.ExpressionAttributeNames).toMatchObject({
+      '#p': 'priority',
+      '#u': 'updatedAt',
+    });
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ':priority': 'Urgent',
+    });
+  });
+
+  it('rejects an invalid priority during update', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        statuses: ['TODO'],
+      },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+        body: JSON.stringify({ priority: 'Critical' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'priority must be one of None, Low, Normal, High, Urgent if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it('returns 404 when task does not exist', async () => {

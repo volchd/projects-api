@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import type { TaskStatus } from '../types';
+import type { TaskPriority, TaskStatus } from '../types';
+import { TASK_PRIORITY_VALUES, toPriorityOptions } from '../constants/taskPriorityOptions';
 
 const EMPTY_DESCRIPTION = '';
+const DEFAULT_PRIORITY: TaskPriority = 'None';
 
 const toDateInputValue = (value: string | null | undefined): string => {
   if (!value) {
@@ -14,6 +16,7 @@ type TaskEditorFormState = {
   name: string;
   description: string;
   status: TaskStatus;
+  priority: TaskPriority;
   startDate: string;
   dueDate: string;
 };
@@ -22,6 +25,7 @@ type TaskEditorSubmitValues = {
   name: string;
   description: string | null;
   status: TaskStatus;
+  priority: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
 };
@@ -35,7 +39,13 @@ type TaskEditorProps = {
   mode: 'create' | 'edit';
   status: TaskStatus;
   statuses: readonly StatusOption[];
-  initialValues?: { name: string; description: string | null; startDate: string | null; dueDate: string | null };
+  initialValues?: {
+    name: string;
+    description: string | null;
+    priority: TaskPriority;
+    startDate: string | null;
+    dueDate: string | null;
+  };
   isSubmitting: boolean;
   isDeleting?: boolean;
   error?: string | null;
@@ -60,6 +70,7 @@ export const TaskEditor = ({
     name: initialValues?.name ?? '',
     description: initialValues?.description ?? EMPTY_DESCRIPTION,
     status,
+    priority: initialValues?.priority ?? DEFAULT_PRIORITY,
     startDate: toDateInputValue(initialValues?.startDate),
     dueDate: toDateInputValue(initialValues?.dueDate),
   });
@@ -71,10 +82,18 @@ export const TaskEditor = ({
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? EMPTY_DESCRIPTION,
       status,
+      priority: initialValues?.priority ?? DEFAULT_PRIORITY,
       startDate: toDateInputValue(initialValues?.startDate),
       dueDate: toDateInputValue(initialValues?.dueDate),
     });
-  }, [initialValues?.name, initialValues?.description, initialValues?.startDate, initialValues?.dueDate, status]);
+  }, [
+    initialValues?.name,
+    initialValues?.description,
+    initialValues?.priority,
+    initialValues?.startDate,
+    initialValues?.dueDate,
+    status,
+  ]);
 
   useEffect(() => {
     if (mode === 'create' && !isSubmitting && !isDeleting) {
@@ -92,6 +111,8 @@ export const TaskEditor = ({
   const deleteLabel = isDeleting ? 'Deleting…' : 'Delete';
   const showDescriptionField = mode === 'edit';
   const showDateFields = mode === 'edit';
+  const priorityOptions = useMemo(() => toPriorityOptions(TASK_PRIORITY_VALUES), []);
+  const showPrioritySelector = mode === 'edit';
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,6 +129,7 @@ export const TaskEditor = ({
       name: trimmedName,
       description: trimmedDescription ? trimmedDescription : null,
       status: values.status,
+      priority: values.priority,
       ...(showDateFields
         ? {
             startDate: startDateValue,
@@ -125,11 +147,11 @@ export const TaskEditor = ({
         type="text"
         ref={nameInputRef}
         value={values.name}
-      onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
-      placeholder="Task title"
-      disabled={isSubmitting || isDeleting}
-    />
-    {showDateFields ? (
+        onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
+        placeholder="Task title"
+        disabled={isSubmitting || isDeleting}
+      />
+      {showDateFields ? (
       <div className="task-editor__dates">
         <label className="task-editor__date-field">
           <span>Start date</span>
@@ -182,6 +204,24 @@ export const TaskEditor = ({
             disabled={isSubmitting || isDeleting}
           >
             {statuses.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {showPrioritySelector ? (
+        <label className="task-editor__status">
+          <span>Priority</span>
+          <select
+            value={values.priority}
+            onChange={(event) =>
+              setValues((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))
+            }
+            disabled={isSubmitting || isDeleting}
+          >
+            {priorityOptions.map((option) => (
               <option key={option.key} value={option.key}>
                 {option.label}
               </option>

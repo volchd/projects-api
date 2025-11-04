@@ -30,6 +30,8 @@ import {
   remove as removeTaskHandler,
   update as updateTaskHandler,
 } from '../src/tasks';
+import { DEFAULT_TASK_PRIORITY } from '../src/tasks.types';
+import type { TaskPriority } from '../src/tasks.types';
 
 vi.hoisted(() => {
   process.env.IS_OFFLINE = 'true';
@@ -73,6 +75,7 @@ interface TaskRecord {
   name: string;
   description: string | null;
   status: string;
+  priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
   createdAt: string;
@@ -256,6 +259,7 @@ describe('tasks integration', () => {
     expect(task.name).toBe('Integration Task');
     expect(task.description).toBe('Created via integration test');
     expect(typeof task.taskId).toBe('string');
+    expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
     expect(task.startDate).toBeNull();
     expect(task.dueDate).toBeNull();
     expect(typeof task.createdAt).toBe('string');
@@ -286,6 +290,7 @@ describe('tasks integration', () => {
 
     expect(statusCode).toBe(201);
     expect(task.status).toBe('IN QA');
+    expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
     createdTaskIds.push(task.taskId);
   });
 
@@ -305,6 +310,22 @@ describe('tasks integration', () => {
     expect(statusCode).toBe(201);
     expect(task.startDate).toBe(new Date(startDate).toISOString());
     expect(task.dueDate).toBe(new Date(dueDate).toISOString());
+    expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
+    createdTaskIds.push(task.taskId);
+  });
+
+  it('creates a task with a custom priority', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const { statusCode, task } = await createTask(project!.id, {
+      name: 'Prioritized task',
+      priority: 'Urgent',
+    });
+
+    expect(statusCode).toBe(201);
+    expect(task.priority).toBe('Urgent');
     createdTaskIds.push(task.taskId);
   });
 
@@ -383,7 +404,8 @@ describe('tasks integration', () => {
           item.projectId === project!.id &&
           item.taskId === firstTask.task.taskId &&
           item.name === 'First task' &&
-          item.description === 'First',
+          item.description === 'First' &&
+          item.priority === DEFAULT_TASK_PRIORITY,
       ),
     ).toBe(true);
 
@@ -393,7 +415,8 @@ describe('tasks integration', () => {
           item.projectId === project!.id &&
           item.taskId === secondTask.task.taskId &&
           item.name === 'Second task' &&
-          item.description === null,
+          item.description === null &&
+          item.priority === DEFAULT_TASK_PRIORITY,
       ),
     ).toBe(true);
   });

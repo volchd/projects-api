@@ -12,7 +12,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
-import type { Project, Task, TaskStatus } from './types';
+import type { Project, Task, TaskPriority, TaskStatus } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
 type TaskView = 'board' | 'list';
@@ -419,6 +419,7 @@ function App() {
       name: string;
       description: string | null;
       status: TaskStatus;
+      priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
     }) => {
@@ -428,6 +429,7 @@ function App() {
           name: values.name,
           description: values.description,
           status: values.status,
+          priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
         });
@@ -445,6 +447,7 @@ function App() {
       name: string;
       description: string | null;
       status: TaskStatus;
+      priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
     }) => {
@@ -456,6 +459,7 @@ function App() {
           name: values.name,
           description: values.description,
           status: values.status,
+          priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
         });
@@ -491,6 +495,7 @@ function App() {
         name: string;
         description: string | null;
         status: TaskStatus;
+        priority: TaskPriority;
         startDate?: string | null;
         dueDate?: string | null;
       },
@@ -501,6 +506,7 @@ function App() {
           name: values.name,
           description: values.description,
           status: values.status,
+          priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
         });
@@ -532,6 +538,7 @@ function App() {
       name: string;
       description: string | null;
       status: TaskStatus;
+      priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
     }) => {
@@ -810,6 +817,7 @@ function App() {
             initialValues={{
               name: taskBeingEdited.name,
               description: taskBeingEdited.description,
+              priority: taskBeingEdited.priority,
               startDate: taskBeingEdited.startDate,
               dueDate: taskBeingEdited.dueDate,
             }}

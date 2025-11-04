@@ -25,10 +25,11 @@ import {
 import { json } from './response';
 import type { ParsedBodyResult, ValidationResult, ProjectStatus } from './projects.types';
 import { DEFAULT_PROJECT_STATUSES, MAX_PROJECT_STATUS_LENGTH } from './projects.types';
-import { DEFAULT_TASK_STATUS } from './tasks.types';
+import { DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS, isTaskPriority } from './tasks.types';
 import type {
   CreateTaskPayload,
   Task,
+  TaskPriority,
   TaskStatus,
   UpdateTaskPayload,
 } from './tasks.types';
@@ -126,6 +127,19 @@ const normalizeTaskStatus = (status: unknown): TaskStatus | null => {
   return collapsed.toUpperCase();
 };
 
+const normalizeTaskPriority = (priority: unknown): TaskPriority | null => {
+  if (typeof priority !== 'string') {
+    return null;
+  }
+
+  const trimmed = priority.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return isTaskPriority(trimmed) ? trimmed : null;
+};
+
 const coerceProjectStatuses = (value: unknown): ProjectStatus[] => {
   if (!Array.isArray(value)) {
     return [...DEFAULT_PROJECT_STATUSES];
@@ -164,6 +178,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
   const name = data.name;
   const description = toStringOrNull(data.description);
   let status: TaskStatus | undefined;
+  let priority: TaskPriority | undefined;
   const hasStartDate = Object.prototype.hasOwnProperty.call(data, 'startDate');
   const hasDueDate = Object.prototype.hasOwnProperty.call(data, 'dueDate');
   let startDate: string | null | undefined;
@@ -183,6 +198,15 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
       errors.push(`status must be a non-empty string up to ${MAX_PROJECT_STATUS_LENGTH} characters if provided`);
     } else {
       status = normalizedStatus;
+    }
+  }
+
+  if ('priority' in data) {
+    const normalizedPriority = normalizeTaskPriority(data.priority);
+    if (!normalizedPriority) {
+      errors.push('priority must be one of None, Low, Normal, High, Urgent if provided');
+    } else {
+      priority = normalizedPriority;
     }
   }
 
@@ -206,6 +230,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
     name: name as string,
     description,
     status,
+    priority,
   };
 
   if (hasStartDate) {
@@ -257,6 +282,15 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
       result.status = normalizedStatus;
     } else {
       errors.push(`status must be a non-empty string up to ${MAX_PROJECT_STATUS_LENGTH} characters if provided`);
+    }
+  }
+
+  if ('priority' in data) {
+    const normalizedPriority = normalizeTaskPriority(data.priority);
+    if (normalizedPriority) {
+      result.priority = normalizedPriority;
+    } else {
+      errors.push('priority must be one of None, Low, Normal, High, Urgent if provided');
     }
   }
 
@@ -325,6 +359,16 @@ const toTaskStatus = (status: unknown): TaskStatus => {
   return DEFAULT_TASK_STATUS;
 };
 
+const toTaskPriority = (priority: unknown): TaskPriority => {
+  if (typeof priority === 'string') {
+    const trimmed = priority.trim();
+    if (isTaskPriority(trimmed)) {
+      return trimmed;
+    }
+  }
+  return DEFAULT_TASK_PRIORITY;
+};
+
 const toDateValue = (value: unknown): string | null => {
   if (typeof value === 'string' && value.trim()) {
     return value;
@@ -347,6 +391,7 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     name: String(item.name),
     description: (item.description ?? null) as string | null,
     status: toTaskStatus(item.status),
+    priority: toTaskPriority(item.priority),
     startDate: toDateValue(item.startDate),
     dueDate: toDateValue(item.dueDate),
     createdAt: String(item.createdAt),
@@ -381,6 +426,7 @@ export const create = async (
 
     const fallbackStatus = projectStatuses[0] ?? DEFAULT_TASK_STATUS;
     const targetStatus = value.status ?? fallbackStatus;
+    const priority = value.priority ?? DEFAULT_TASK_PRIORITY;
     const startDate = value.startDate ?? null;
     const dueDate = value.dueDate ?? null;
 
@@ -402,6 +448,7 @@ export const create = async (
       name: value.name,
       description: value.description ?? null,
       status: targetStatus,
+      priority,
       startDate,
       dueDate,
       createdAt: now,
@@ -558,6 +605,12 @@ export const update = async (
       names.push('#s = :status');
       exprNames['#s'] = 'status';
       exprValues[':status'] = value.status;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'priority')) {
+      names.push('#p = :priority');
+      exprNames['#p'] = 'priority';
+      exprValues[':priority'] = value.priority ?? DEFAULT_TASK_PRIORITY;
     }
 
     if (Object.prototype.hasOwnProperty.call(value, 'startDate')) {

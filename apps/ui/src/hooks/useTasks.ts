@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskPriority, TaskStatus } from '../types';
 import {
   createTask as apiCreateTask,
   deleteTask as apiDeleteTask,
@@ -11,6 +11,7 @@ import {
 
 const UNKNOWN_ERROR = 'Unknown error';
 const DEFAULT_STATUS: TaskStatus = 'TODO';
+const DEFAULT_PRIORITY: TaskPriority = 'None';
 
 type UseTasksState = {
   tasks: Task[];
@@ -130,6 +131,7 @@ export const useTasks = (projectId: string | null, statuses: readonly TaskStatus
           name: payload.name,
           description: payload.description,
           status: targetStatus,
+          priority: payload.priority ?? DEFAULT_PRIORITY,
           startDate: payload.startDate ?? null,
           dueDate: payload.dueDate ?? null,
         });

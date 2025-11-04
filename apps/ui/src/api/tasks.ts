@@ -1,10 +1,11 @@
 import { apiUrl, parseError } from './client';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskPriority, TaskStatus } from '../types';
 
 export type CreateTaskPayload = {
   name: string;
   description: string | null;
   status?: TaskStatus;
+  priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
 };
@@ -13,6 +14,7 @@ export type UpdateTaskPayload = {
   name?: string;
   description?: string | null;
   status?: TaskStatus;
+  priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
 };
@@ -35,6 +37,7 @@ export const createTask = async (projectId: string, payload: CreateTaskPayload) 
       name: payload.name,
       description: payload.description,
       status: payload.status,
+      priority: payload.priority ?? 'None',
       startDate: payload.startDate ?? null,
       dueDate: payload.dueDate ?? null,
     }),
