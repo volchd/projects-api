@@ -26,6 +26,7 @@ export const ProjectForm = ({
   submitLabel,
   cancelLabel,
 }: ProjectFormProps) => {
+  const isEditMode = mode === 'edit';
   const [values, setValues] = useState<ProjectFormValues>({
     name: initialValues?.name ?? '',
     description: initialValues?.description ?? '',
@@ -50,7 +51,7 @@ export const ProjectForm = ({
     event.preventDefault();
     await onSubmit({
       name: values.name.trim(),
-      description: values.description.trim(),
+      description: isEditMode ? values.description.trim() : '',
     });
   };
 
@@ -69,19 +70,21 @@ export const ProjectForm = ({
           placeholder="Project name"
         />
       </div>
-      <div className="project-editor__field">
-        <label htmlFor={`${mode}-project-description`} className="project-editor__label">
-          Description
-        </label>
-        <textarea
-          id={`${mode}-project-description`}
-          value={values.description}
-          onChange={(event) => setValues((prev) => ({ ...prev, description: event.target.value }))}
-          disabled={isSubmitting}
-          placeholder="Short description (optional)"
-          rows={3}
-        />
-      </div>
+      {isEditMode ? (
+        <div className="project-editor__field">
+          <label htmlFor={`${mode}-project-description`} className="project-editor__label">
+            Description
+          </label>
+          <textarea
+            id={`${mode}-project-description`}
+            value={values.description}
+            onChange={(event) => setValues((prev) => ({ ...prev, description: event.target.value }))}
+            disabled={isSubmitting}
+            placeholder="Short description (optional)"
+            rows={3}
+          />
+        </div>
+      ) : null}
       {error ? <div className="board__alert board__alert--error">{error}</div> : null}
       <div className="project-editor__actions">
         <button type="submit" disabled={isSubmitting}>
