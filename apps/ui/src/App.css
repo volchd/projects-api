@@ -44,6 +44,10 @@
 
   --btn-height: 40px;
   --btn-height-sm: 32px;
+  --layout-section-padding-block: clamp(var(--space-sm), 2vw, var(--space-md));
+  --layout-section-padding-inline: clamp(var(--space-sm), 2vw, var(--space-md));
+  --layout-section-padding-block-mobile: clamp(6px, 4vw, var(--space-sm));
+  --layout-section-padding-inline-mobile: clamp(var(--space-sm), 6vw, var(--space-md));
 }
 
 .surface {
@@ -172,9 +176,9 @@
   min-height: 100vh;
   width: 100%;
   display: flex;
-  align-items: flex-start;
-  gap: clamp(var(--space-lg), 5vw, var(--space-xl));
-  padding: clamp(var(--space-md), 5vw, var(--space-xl));
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
 }
 
 .sr-only {
@@ -227,15 +231,16 @@ select:focus-visible {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-surface);
+  margin: 1px;
   padding: var(--space-xl) var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  height: calc(100vh - 2 * clamp(var(--space-md), 5vw, var(--space-xl)));
+  height: calc(100vh - 2px);
   overflow-y: auto;
   flex-shrink: 0;
   position: sticky;
-  top: var(--space-xl);
+  top: 1px;
   backdrop-filter: blur(12px);
   transition: box-shadow var(--transition-standard), transform var(--transition-emphasized);
 }
@@ -502,26 +507,25 @@ select:focus-visible {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: 0;
   min-height: 0;
   overflow: hidden;
   max-width: 100%;
   width: 100%;
   min-width: 0;
 }
-
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
-  padding: clamp(var(--space-md), 4vw, var(--space-lg)) clamp(var(--space-md), 6vw, var(--space-xl));
+  padding: var(--layout-section-padding-block) var(--layout-section-padding-inline);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-surface);
   position: sticky;
-  top: var(--space-xl);
+  top: 0;
   z-index: 5;
   backdrop-filter: blur(12px);
 }
@@ -773,10 +777,10 @@ select:focus-visible {
 
 .board {
   flex: 1;
-  padding: clamp(var(--space-lg), 5vw, var(--space-xl));
+  padding: var(--layout-section-padding-block) var(--layout-section-padding-inline);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   overflow: hidden;
   min-height: 0;
 }
@@ -785,7 +789,7 @@ select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  padding: var(--space-xl);
+  padding: var(--space-md);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -799,6 +803,7 @@ select:focus-visible {
   margin: 0;
   color: var(--text-main);
   animation: fade-up var(--duration-standard) var(--ease-standard) both;
+  font-size: clamp(1.6rem, 3.5vw, 2.1rem);
 }
 
 .board__header h1::after {
@@ -817,6 +822,8 @@ select:focus-visible {
   color: var(--text-muted);
   animation: fade-up var(--duration-standard) var(--ease-standard) both;
   animation-delay: 80ms;
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  line-height: 1.5;
 }
 
 .board__header::before {
@@ -1935,7 +1942,7 @@ select:focus-visible {
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-lg);
-    padding: clamp(var(--space-md), 6vw, var(--space-lg));
+    padding: 0;
     max-width: 100%;
     height: auto;
   }
@@ -1963,7 +1970,10 @@ select:focus-visible {
     align-items: stretch;
     gap: var(--space-md);
     position: static;
-    padding: clamp(var(--space-md), 6vw, var(--space-lg));
+    padding: var(--layout-section-padding-block-mobile) var(--layout-section-padding-inline-mobile);
+  }
+  .board {
+    padding: var(--layout-section-padding-block-mobile) var(--layout-section-padding-inline-mobile);
   }
 
   .topbar__search {
