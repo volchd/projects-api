@@ -7,15 +7,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm --workspaces --if-present run dev",
-    "dev:api": "npm --workspace apps/api run dev",
-    "dev:ui": "npm --workspace apps/ui run dev",
-    "build:api": "npm --workspace apps/api run build",
-    "build:ui": "npm --workspace apps/ui run build",
-    "build": "npm --workspaces --if-present run build",
-    "test:api": "npm --workspace apps/api run test",
-    "test:ui": "npm --workspace apps/ui run test",
-    "test": "npm --workspaces --if-present run test",
-    "lint": "npm --workspaces --if-present run lint"
+    "dev": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run dev",
+    "dev:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run dev",
+    "dev:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run dev",
+    "build:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run build",
+    "build:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run build",
+    "build": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run build",
+    "test:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run test",
+    "test:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run test",
+    "test": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run test",
+    "lint": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run lint"
   }
 }
