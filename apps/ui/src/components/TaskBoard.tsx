@@ -458,7 +458,7 @@ export const TaskBoard = ({
 
   return (
     <div
-      className={`board__columns${isColumnsScrolling ? ' board__columns--scrolling' : ''}`}
+      className="flex flex-1 gap-6 pb-2 -mb-2 overflow-x-auto overflow-y-hidden"
       ref={columnsRef}
     >
       {statusOptions.map((column) => {
@@ -477,11 +477,15 @@ export const TaskBoard = ({
 
         return (
           <div
-            className={`board__column surface${
-              isDragTarget ? ' board__column--droppable' : ''
-            }${isColumnDragTarget ? ' board__column--sortable-target' : ''}${
-              isColumnDragging ? ' board__column--dragging' : ''
-            }`}
+            className={`flex flex-col flex-shrink-0 flex-1 basis-[clamp(260px,32vw,320px)] max-h-full p-4 rounded-2xl bg-white border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700 snap-start ${
+              isDragTarget
+                ? 'bg-indigo-100 border-indigo-300 shadow-inner dark:bg-indigo-900/20 dark:border-indigo-500/40'
+                : ''
+            }${
+              isColumnDragTarget
+                ? 'border-indigo-300 shadow-inner dark:border-indigo-500/40'
+                : ''
+            }${isColumnDragging ? 'opacity-60' : ''}`}
             key={column.key}
             onDragOver={(event) => handleStatusDragOver(event, column.key)}
             onDragEnter={(event) => handleStatusDragOver(event, column.key)}
@@ -489,25 +493,29 @@ export const TaskBoard = ({
             onDrop={(event) => handleStatusDrop(event, column.key)}
           >
             <div
-              className={`board__column-header${isSortable ? ' board__column-header--draggable' : ''}`}
+              className={`flex items-center justify-between gap-4 ${
+                isSortable ? 'draggable' : ''
+              }`}
               draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
               onDragStart={(event) => handleStatusDragStart(event, column.key)}
               onDragEnd={handleStatusDragEnd}
               data-column-drag-handle={isSortable ? 'true' : undefined}
             >
-              <h2>{column.label}</h2>
-              <div className="board__column-actions">
-                <span className="board__count">{columnTasks.length}</span>
+              <h2 className="text-base font-medium">{column.label}</h2>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 text-sm font-semibold text-gray-900 bg-indigo-100 rounded-full dark:bg-indigo-900/40 dark:text-gray-50">
+                  {columnTasks.length}
+                </span>
                 {isSortable ? (
                   <button
                     type="button"
-                    className="board__column-drag"
+                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 transition-colors rounded-lg dark:text-gray-400 hover:bg-indigo-100/80 hover:text-indigo-600 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-400"
                     aria-label={`Reorder ${column.label} column`}
                     draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
                     onDragStart={(event) => handleStatusDragStart(event, column.key)}
                     onDragEnd={handleStatusDragEnd}
-                    >
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="w-5 h-5">
                       <path
                         fill="currentColor"
                         d="M7 10h10v2H7v-2Zm0-4h10v2H7V6Zm0 8h10v2H7v-2Zm0 4h10v2H7v-2Z"
@@ -518,7 +526,7 @@ export const TaskBoard = ({
               </div>
             </div>
             <div
-              className="board__cards"
+              className="flex flex-col flex-auto gap-3.5 mt-4 -mr-1 pr-1 overflow-y-auto min-h-0"
               onDragOver={(event) => handleColumnDragOver(event, column.key)}
               onDragEnter={(event) => handleColumnDragOver(event, column.key)}
               onDragLeave={(event) => handleColumnDragLeave(event, column.key)}
@@ -535,26 +543,34 @@ export const TaskBoard = ({
                   onCancel={() => setActiveCreateStatus(null)}
                 />
               ) : null}
-              {showLoadingState ? <div className="board__placeholder">Loading…</div> : null}
+              {showLoadingState ? (
+                <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-300 rounded-xl dark:border-gray-600 dark:text-gray-400">
+                  Loading…
+                </div>
+              ) : null}
               {showErrorState ? (
-                <div className="board__placeholder board__placeholder--error">{error}</div>
+                <div className="px-4 py-3 text-sm text-center text-yellow-700 bg-yellow-100 border border-dashed border-yellow-400 rounded-xl dark:bg-yellow-900/20 dark:border-yellow-400/40 dark:text-yellow-400">
+                  {error}
+                </div>
               ) : null}
               {showEmptyState ? (
-                <div className="board__placeholder board__placeholder--muted">No tasks yet.</div>
+                <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-300 rounded-xl dark:border-gray-600 dark:text-gray-400">
+                  No tasks yet.
+                </div>
               ) : null}
               {columnTasks.map((task) => (
                 <article
                   key={task.taskId}
-                  className={`task-card surface${
-                    draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
+                  className={`relative flex flex-col gap-2.5 p-4 bg-white border border-gray-200 rounded-2xl shadow-md cursor-grab active:cursor-grabbing dark:bg-gray-800 dark:border-gray-700 group ${
+                    draggingTaskId === task.taskId ? 'opacity-60' : ''
                   }`}
                   draggable
                   onDragStart={(event) => handleDragStart(event, task.taskId)}
                   onDragEnd={handleDragEnd}
                   aria-grabbed={draggingTaskId === task.taskId}
                 >
-                  <header>
-                    <h3>{task.name}</h3>
+                  <header className="flex items-start justify-between gap-3">
+                    <h3 className="text-base font-medium">{task.name}</h3>
                     <button
                       type="button"
                       aria-label={`Edit ${task.name}`}
@@ -563,8 +579,9 @@ export const TaskBoard = ({
                         onEditTask(task.taskId);
                       }}
                       disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                      className="p-1 text-gray-500 transition-colors rounded-lg opacity-0 pointer-events-none dark:text-gray-400 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700/60 dark:hover:text-gray-50"
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="w-5 h-5">
                         <path
                           fill="currentColor"
                           d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
@@ -573,28 +590,38 @@ export const TaskBoard = ({
                     </button>
                   </header>
                   {task.labels.length ? (
-                    <div className="task-card__labels">
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       {task.labels.map((label) => (
-                        <span key={`${task.taskId}-label-${label.toLowerCase()}`} className="task-card__label">
+                        <span
+                          key={`${task.taskId}-label-${label.toLowerCase()}`}
+                          className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full dark:bg-indigo-900/40 dark:text-indigo-300"
+                        >
                           {label}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  {task.description ? <p>{task.description}</p> : null}
+                  {task.description ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
+                  ) : null}
                 </article>
               ))}
             </div>
             {activeCreateStatus === column.key ? null : (
               <button
                 type="button"
-                className="board__add-task btn"
+                className="inline-flex items-center justify-start gap-2 px-4 py-2 mt-auto text-sm font-medium text-gray-500 transition-colors rounded-lg dark:text-gray-400 hover:bg-gray-100/80 hover:text-gray-900 dark:hover:bg-gray-700/50 dark:hover:text-gray-50"
                 onClick={() => {
                   setActiveCreateStatus(column.key);
                 }}
                 disabled={Boolean(creatingStatus)}
               >
-                <span aria-hidden="true">+</span>
+                <span
+                  aria-hidden="true"
+                  className="inline-flex items-center justify-center w-5 h-5 font-semibold text-gray-900 bg-gray-200 rounded-full dark:bg-gray-700 dark:text-gray-50"
+                >
+                  +
+                </span>
                 Add Task
               </button>
             )}
@@ -602,8 +629,8 @@ export const TaskBoard = ({
         );
       })}
       <div
-        className={`board__column surface board__column--add-status${
-          isDragOverAddColumn ? ' board__column--add-status-target' : ''
+        className={`flex flex-col items-center justify-center flex-shrink-0 flex-1 basis-[clamp(260px,32vw,320px)] max-h-full p-4 rounded-2xl bg-white border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700 snap-start ${
+          isDragOverAddColumn ? 'border-indigo-300 shadow-inner dark:border-indigo-500/40' : ''
         }`}
         onDragOver={handleStatusDragEnterAddColumn}
         onDragEnter={handleStatusDragEnterAddColumn}
@@ -611,7 +638,7 @@ export const TaskBoard = ({
         onDrop={handleStatusDropOnAddColumn}
       >
         {isAddingStatus ? (
-          <form className="board__add-status-form" onSubmit={handleAddStatusSubmit}>
+          <form className="flex flex-col w-full gap-3" onSubmit={handleAddStatusSubmit}>
             <input
               type="text"
               value={newStatusName}
@@ -624,22 +651,26 @@ export const TaskBoard = ({
               placeholder="Status name"
               aria-label="Status name"
               disabled={isUpdatingStatuses}
+              className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
             />
             {addStatusError ? (
-              <div className="board__add-status-error" role="alert">
+              <div
+                className="text-sm text-left text-yellow-700 dark:text-yellow-400"
+                role="alert"
+              >
                 {addStatusError}
               </div>
             ) : null}
-            <div className="board__add-status-actions">
+            <div className="flex justify-end gap-2">
               <button
-                className="btn btn-primary"
+                className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-white transition-colors bg-indigo-600 rounded-lg shadow-lg dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={isUpdatingStatuses || !newStatusName.trim()}
               >
                 {isUpdatingStatuses ? 'Saving…' : 'Save'}
               </button>
               <button
-                className="btn btn-secondary"
+                className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-gray-900 transition-colors bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-60 disabled:cursor-not-allowed"
                 type="button"
                 onClick={handleCancelAddStatus}
                 disabled={isUpdatingStatuses}
@@ -651,11 +682,16 @@ export const TaskBoard = ({
         ) : (
           <button
             type="button"
-            className="board__add-status-trigger"
+            className="inline-flex flex-col items-center gap-2 px-6 py-4 font-semibold text-gray-900 transition-colors border border-dashed border-gray-300 rounded-xl dark:border-gray-600 dark:text-gray-50 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/20"
             onClick={handleStartAddStatus}
             disabled={isUpdatingStatuses}
           >
-            <span aria-hidden="true">+</span>
+            <span
+              aria-hidden="true"
+              className="inline-flex items-center justify-center w-9 h-9 text-xl font-bold text-white bg-indigo-600 rounded-full dark:bg-indigo-500"
+            >
+              +
+            </span>
             Add status
           </button>
         )}

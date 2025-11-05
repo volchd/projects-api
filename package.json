@@ -17,5 +17,11 @@
     "test:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run test",
     "test": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run test",
     "lint": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run lint"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.16"
   }
 }

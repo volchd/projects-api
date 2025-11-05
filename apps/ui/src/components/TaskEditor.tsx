@@ -245,14 +245,20 @@ export const TaskEditor = ({
   const shouldRenderGrid = hasPrimaryExtras || showSecondaryColumn;
 
   return (
-    <form className="task-editor" onSubmit={handleSubmit}>
-      <div className="task-editor__content">
+    <form
+      className="flex flex-col gap-4 p-4 overflow-hidden bg-white border border-gray-200 rounded-2xl dark:bg-gray-800 dark:border-gray-700"
+      onSubmit={handleSubmit}
+    >
+      <div className="flex flex-col flex-1 gap-4 pr-1 -mr-1 overflow-y-auto">
         {error ? (
-          <div className="task-editor__error" role="alert">
+          <div
+            className="px-3 py-2 text-sm font-medium text-red-800 bg-red-100 rounded-lg dark:bg-red-900/40 dark:text-red-300"
+            role="alert"
+          >
             {error}
           </div>
         ) : null}
-        <div className="task-editor__name">
+        <div className="flex flex-col gap-2">
           <input
             type="text"
             ref={nameInputRef}
@@ -260,15 +266,16 @@ export const TaskEditor = ({
             onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="Task title"
             disabled={isSubmitting || isDeleting}
+            className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
           />
         </div>
         {shouldRenderGrid ? (
-          <div className="task-editor__grid">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {hasPrimaryExtras ? (
-              <div className="task-editor__column task-editor__column--primary">
+              <div className="flex flex-col col-span-1 gap-3">
                 {showDateFields ? (
-                  <div className="task-editor__dates">
-                    <label className="task-editor__date-field">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
                       <span>Start date</span>
                       <input
                         type="date"
@@ -278,9 +285,10 @@ export const TaskEditor = ({
                           setValues((prev) => ({ ...prev, startDate: event.target.value }))
                         }
                         disabled={isSubmitting || isDeleting}
+                        className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                       />
                     </label>
-                    <label className="task-editor__date-field">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
                       <span>Due date</span>
                       <input
                         type="date"
@@ -290,6 +298,7 @@ export const TaskEditor = ({
                           setValues((prev) => ({ ...prev, dueDate: event.target.value }))
                         }
                         disabled={isSubmitting || isDeleting}
+                        className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                       />
                     </label>
                   </div>
@@ -303,14 +312,15 @@ export const TaskEditor = ({
                     placeholder="Description (optional)"
                     disabled={isSubmitting || isDeleting}
                     rows={3}
+                    className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                   />
                 ) : null}
               </div>
             ) : null}
             {showSecondaryColumn ? (
-              <div className="task-editor__column task-editor__column--secondary">
+              <div className="flex flex-col col-span-1 gap-3">
                 {showStatusSelector ? (
-                  <label className="task-editor__status">
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
                     <span>Status</span>
                     <select
                       value={values.status}
@@ -318,6 +328,7 @@ export const TaskEditor = ({
                         setValues((prev) => ({ ...prev, status: event.target.value as TaskStatus }))
                       }
                       disabled={isSubmitting || isDeleting}
+                      className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                     >
                       {statuses.map((option) => (
                         <option key={option.key} value={option.key}>
@@ -328,14 +339,18 @@ export const TaskEditor = ({
                   </label>
                 ) : null}
                 {showPrioritySelector ? (
-                  <label className="task-editor__status">
+                  <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
                     <span>Priority</span>
                     <select
                       value={values.priority}
                       onChange={(event) =>
-                        setValues((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))
+                        setValues((prev) => ({
+                          ...prev,
+                          priority: event.target.value as TaskPriority,
+                        }))
                       }
                       disabled={isSubmitting || isDeleting}
+                      className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                     >
                       {priorityOptions.map((option) => (
                         <option key={option.key} value={option.key}>
@@ -346,18 +361,20 @@ export const TaskEditor = ({
                   </label>
                 ) : null}
                 {showLabelSelector ? (
-                  <div className="task-editor__labels">
-                    <span className="task-editor__labels-title">Labels</span>
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Labels</span>
                     {labelOptions.length ? (
-                      <div className="task-editor__label-options">
+                      <div className="flex flex-wrap gap-2">
                         {labelOptions.map((label) => {
                           const isActive = isLabelSelected(label);
                           return (
                             <button
                               type="button"
                               key={label.toLowerCase()}
-                              className={`task-editor__label-option${
-                                isActive ? ' task-editor__label-option--active' : ''
+                              className={`px-3 py-1 text-xs font-semibold border rounded-full ${
+                                isActive
+                                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                                  : 'border-indigo-300 bg-indigo-100 text-indigo-700 dark:border-indigo-500/60 dark:bg-indigo-900/40 dark:text-indigo-300'
                               }`}
                               onClick={() => handleToggleLabel(label)}
                               disabled={isSubmitting || isDeleting}
@@ -369,9 +386,11 @@ export const TaskEditor = ({
                         })}
                       </div>
                     ) : (
-                      <p className="task-editor__label-placeholder">No labels yet. Create one below.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        No labels yet. Create one below.
+                      </p>
                     )}
-                    <div className="task-editor__label-add">
+                    <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={labelInput}
@@ -389,30 +408,43 @@ export const TaskEditor = ({
                             handleAddLabel();
                           }
                         }}
+                        className="w-full px-3 py-2 text-base bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-indigo-600 focus:border-indigo-600"
                       />
-                      <button type="button" onClick={handleAddLabel} disabled={!canAddLabel}>
+                      <button
+                        type="button"
+                        onClick={handleAddLabel}
+                        disabled={!canAddLabel}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg dark:bg-indigo-500 disabled:opacity-60"
+                      >
                         Add
                       </button>
                     </div>
                     {values.labels.length ? (
-                      <div className="task-editor__selected-labels">
+                      <div className="flex flex-wrap gap-2">
                         {values.labels.map((label) => (
-                          <span key={label.toLowerCase()} className="task-editor__selected-label">
+                          <span
+                            key={label.toLowerCase()}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full dark:bg-indigo-900/40 dark:text-indigo-300"
+                          >
                             {label}
                             <button
                               type="button"
                               onClick={() => handleToggleLabel(label)}
                               disabled={isSubmitting || isDeleting}
                               aria-label={`Remove ${label}`}
+                              className="text-sm leading-none"
                             >
-                              x
+                              &times;
                             </button>
                           </span>
                         ))}
                       </div>
                     ) : null}
                     {labelError ? (
-                      <div className="task-editor__label-error" role="alert">
+                      <div
+                        className="text-xs text-red-700 dark:text-red-400"
+                        role="alert"
+                      >
                         {labelError}
                       </div>
                     ) : null}
@@ -423,11 +455,11 @@ export const TaskEditor = ({
           </div>
         ) : null}
       </div>
-      <div className="task-editor__actions">
+      <div className="flex items-center justify-between gap-3">
         {mode === 'edit' && onDelete ? (
           <button
             type="button"
-            className="task-editor__delete"
+            className="font-semibold text-red-600 transition-colors dark:text-red-400 hover:text-red-700 dark:hover:text-red-500 disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={async () => {
               await onDelete();
             }}
@@ -438,15 +470,20 @@ export const TaskEditor = ({
         ) : (
           <span />
         )}
-        <div className="task-editor__buttons">
+        <div className="flex items-center gap-2">
           <button
-            className="btn btn-primary"
+            className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-white transition-colors bg-indigo-600 rounded-lg shadow-lg dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
             type="submit"
             disabled={isSubmitting || isDeleting || !values.name.trim()}
           >
             {submitLabel}
           </button>
-          <button className="btn btn-secondary" type="button" onClick={onCancel} disabled={isSubmitting || isDeleting}>
+          <button
+            className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-gray-900 transition-colors bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-60 disabled:cursor-not-allowed"
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting || isDeleting}
+          >
             Cancel
           </button>
         </div>
