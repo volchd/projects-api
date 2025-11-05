@@ -10,3 +10,4 @@ dist/
 *.log
 apps/ui/.vite
 apps/ui/tsconfig.tsbuildinfo
+.tmp/
