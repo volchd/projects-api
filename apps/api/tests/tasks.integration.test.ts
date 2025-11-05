@@ -19,6 +19,7 @@ import {
 import { resolveUserId } from '../src/auth';
 import {
   create as createProjectHandler,
+  get as getProjectHandler,
   remove as removeProjectHandler,
   update as updateProjectHandler,
 } from '../src/projects';
@@ -67,6 +68,7 @@ interface ProjectRecord {
   name: string;
   description: string | null;
   statuses: string[];
+  labels: string[];
 }
 
 interface TaskRecord {
@@ -80,6 +82,7 @@ interface TaskRecord {
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
+  labels: string[];
 }
 
 interface TaskListResponse {
@@ -206,6 +209,7 @@ describe('tasks integration', () => {
     expect(statusCode).toBe(201);
     expect(created.userId).toBe(hardcodedUserId);
     expect(created.statuses).toEqual(DEFAULT_PROJECT_STATUSES);
+    expect(created.labels).toEqual([]);
     project = created;
   });
 
@@ -262,6 +266,7 @@ describe('tasks integration', () => {
     expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
     expect(task.startDate).toBeNull();
     expect(task.dueDate).toBeNull();
+    expect(task.labels).toEqual([]);
     expect(typeof task.createdAt).toBe('string');
     expect(typeof task.updatedAt).toBe('string');
 
@@ -291,6 +296,7 @@ describe('tasks integration', () => {
     expect(statusCode).toBe(201);
     expect(task.status).toBe('IN QA');
     expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
+    expect(task.labels).toEqual([]);
     createdTaskIds.push(task.taskId);
   });
 
@@ -311,6 +317,7 @@ describe('tasks integration', () => {
     expect(task.startDate).toBe(new Date(startDate).toISOString());
     expect(task.dueDate).toBe(new Date(dueDate).toISOString());
     expect(task.priority).toBe(DEFAULT_TASK_PRIORITY);
+    expect(task.labels).toEqual([]);
     createdTaskIds.push(task.taskId);
   });
 
@@ -326,7 +333,34 @@ describe('tasks integration', () => {
 
     expect(statusCode).toBe(201);
     expect(task.priority).toBe('Urgent');
+    expect(task.labels).toEqual([]);
     createdTaskIds.push(task.taskId);
+  });
+
+  it('creates a task with labels and updates project labels', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const { statusCode, task } = await createTask(project!.id, {
+      name: 'Document feature',
+      labels: ['Docs', 'Support'],
+    });
+
+    expect(statusCode).toBe(201);
+    expect(task.labels).toEqual(['Docs', 'Support']);
+    createdTaskIds.push(task.taskId);
+
+    const projectResponse = await getProjectHandler(
+      baseEvent({
+        pathParameters: { id: project!.id },
+      }),
+    );
+
+    expect(projectResponse.statusCode).toBe(200);
+    const reloaded = parseBody<ProjectRecord>(projectResponse.body);
+    expect(reloaded.labels).toEqual(['Docs', 'Support']);
+    project = reloaded;
   });
 
   it('rejects creating a task when due date is before the start date', async () => {
@@ -405,7 +439,9 @@ describe('tasks integration', () => {
           item.taskId === firstTask.task.taskId &&
           item.name === 'First task' &&
           item.description === 'First' &&
-          item.priority === DEFAULT_TASK_PRIORITY,
+          item.priority === DEFAULT_TASK_PRIORITY &&
+          Array.isArray(item.labels) &&
+          item.labels.length === 0,
       ),
     ).toBe(true);
 
@@ -416,7 +452,9 @@ describe('tasks integration', () => {
           item.taskId === secondTask.task.taskId &&
           item.name === 'Second task' &&
           item.description === null &&
-          item.priority === DEFAULT_TASK_PRIORITY,
+          item.priority === DEFAULT_TASK_PRIORITY &&
+          Array.isArray(item.labels) &&
+          item.labels.length === 0,
       ),
     ).toBe(true);
   });
@@ -455,8 +493,43 @@ describe('tasks integration', () => {
       startDate: new Date('2035-06-01').toISOString(),
       dueDate: new Date('2035-06-10').toISOString(),
     });
+    expect(updated.labels).toEqual([]);
     expect(typeof updated.createdAt).toBe('string');
     expect(typeof updated.updatedAt).toBe('string');
+  });
+
+  it('updates task labels and syncs project labels', async () => {
+    if (!dynamoAvailable) {
+      return;
+    }
+
+    const initial = await createTask(project!.id, {
+      name: 'Labelled task',
+      labels: ['Docs'],
+    });
+    expect(initial.statusCode).toBe(201);
+    createdTaskIds.push(initial.task.taskId);
+
+    const updateResponse = await updateTaskHandler(
+      baseEvent({
+        pathParameters: { projectId: project!.id, taskId: initial.task.taskId },
+        body: JSON.stringify({ labels: ['Docs', 'Support'] }),
+      }),
+    );
+
+    expect(updateResponse.statusCode).toBe(200);
+    const updated = parseBody<TaskRecord>(updateResponse.body);
+    expect(updated.labels).toEqual(['Docs', 'Support']);
+
+    const projectResponse = await getProjectHandler(
+      baseEvent({
+        pathParameters: { id: project!.id },
+      }),
+    );
+    expect(projectResponse.statusCode).toBe(200);
+    const reloaded = parseBody<ProjectRecord>(projectResponse.body);
+    expect(reloaded.labels).toEqual(['Docs', 'Support']);
+    project = reloaded;
   });
 
   it('rejects updating a task when due date is before the start date', async () => {

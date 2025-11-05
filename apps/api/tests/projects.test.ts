@@ -103,6 +103,7 @@ describe('create', () => {
       name: 'My Project',
       description: null,
       statuses: DEFAULT_PROJECT_STATUSES,
+      labels: [],
     });
 
     expect(sendMock).toHaveBeenCalledTimes(1);
@@ -123,6 +124,7 @@ describe('create', () => {
         GSI1PK: 'USER#demo-user',
         GSI1SK: 'PROJECT#project-123',
         statuses: DEFAULT_PROJECT_STATUSES,
+        labels: [],
       },
     });
   });
@@ -144,10 +146,39 @@ describe('create', () => {
       name: 'With statuses',
       description: null,
       statuses: ['BACKLOG', 'IN QA'],
+      labels: [],
     });
 
     const command = sendMock.mock.calls[0][0] as PutCommand;
     expect(command.input.Item?.statuses).toEqual(['BACKLOG', 'IN QA']);
+    expect(command.input.Item?.labels).toEqual([]);
+  });
+
+  it('accepts labels on create', async () => {
+    sendMock.mockResolvedValueOnce({});
+    randomUUIDMock.mockReturnValueOnce('project-with-labels');
+
+    const response = await create(
+      baseEvent({
+        body: JSON.stringify({
+          name: 'With labels',
+          labels: [' Docs ', 'Design', 'Support'],
+        }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
+      id: 'project-with-labels',
+      userId: 'demo-user',
+      name: 'With labels',
+      description: null,
+      statuses: DEFAULT_PROJECT_STATUSES,
+      labels: ['Design', 'Docs', 'Support'],
+    });
+
+    const command = sendMock.mock.calls[0][0] as PutCommand;
+    expect(command.input.Item?.labels).toEqual(['Design', 'Docs', 'Support']);
   });
 
   it('returns 500 when DynamoDB call fails', async () => {
@@ -217,6 +248,7 @@ describe('get', () => {
       name: 'Proj',
       description: null,
       statuses: DEFAULT_PROJECT_STATUSES,
+      labels: [],
     });
 
     const command = sendMock.mock.calls[0][0] as GetCommand;
@@ -240,6 +272,7 @@ describe('listByUser', () => {
           name: 'First',
           description: null,
           statuses: DEFAULT_PROJECT_STATUSES,
+          labels: [],
         },
         {
           PK: 'PROJECT#b',
@@ -249,6 +282,7 @@ describe('listByUser', () => {
           name: 'Second',
           description: 'desc',
           statuses: DEFAULT_PROJECT_STATUSES,
+          labels: [],
         },
       ],
     });
@@ -264,6 +298,7 @@ describe('listByUser', () => {
           name: 'First',
           description: null,
           statuses: DEFAULT_PROJECT_STATUSES,
+          labels: [],
         },
         {
           id: 'b',
@@ -271,6 +306,7 @@ describe('listByUser', () => {
           name: 'Second',
           description: 'desc',
           statuses: DEFAULT_PROJECT_STATUSES,
+          labels: [],
         },
       ],
     });
@@ -355,6 +391,21 @@ describe('update', () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it('validates labels payload', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ labels: 'not-an-array' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'labels must be an array of non-empty strings if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid statuses entries', async () => {
     const response = await update(
       baseEvent({
@@ -386,6 +437,21 @@ describe('update', () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it('rejects duplicate labels', async () => {
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ labels: ['Docs', 'docs'] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toEqual([
+      'labels must contain unique values',
+    ]);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('updates provided fields', async () => {
     sendMock.mockResolvedValueOnce({
       Attributes: {
@@ -396,6 +462,7 @@ describe('update', () => {
         name: 'Updated',
         description: 'Changed',
         statuses: DEFAULT_PROJECT_STATUSES,
+        labels: [],
       },
     });
 
@@ -413,6 +480,7 @@ describe('update', () => {
       name: 'Updated',
       description: 'Changed',
       statuses: DEFAULT_PROJECT_STATUSES,
+      labels: [],
     });
 
     const command = sendMock.mock.calls[0][0] as UpdateCommand;
@@ -442,6 +510,7 @@ describe('update', () => {
         name: 'Existing',
         description: null,
         statuses: ['PLANNING', 'IN REVIEW', 'DONE'],
+        labels: [],
       },
     });
 
@@ -459,6 +528,7 @@ describe('update', () => {
       name: 'Existing',
       description: null,
       statuses: ['PLANNING', 'IN REVIEW', 'DONE'],
+      labels: [],
     });
 
     const command = sendMock.mock.calls[0][0] as UpdateCommand;
@@ -470,6 +540,48 @@ describe('update', () => {
     expect(command.input.ExpressionAttributeValues).toMatchObject({
       ':statuses': ['PLANNING', 'IN REVIEW', 'DONE'],
       ':updatedAt': expect.any(String),
+    });
+  });
+
+  it('updates labels', async () => {
+    sendMock.mockResolvedValueOnce({
+      Attributes: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        name: 'Existing',
+        description: null,
+        statuses: DEFAULT_PROJECT_STATUSES,
+        labels: ['Docs', 'Support'],
+      },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { id: 'project-1' },
+        body: JSON.stringify({ labels: ['Docs', ' Support '] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(parseBody<Record<string, unknown>>(response.body)).toEqual({
+      id: 'project-1',
+      userId: 'demo-user',
+      name: 'Existing',
+      description: null,
+      statuses: DEFAULT_PROJECT_STATUSES,
+      labels: ['Docs', 'Support'],
+    });
+
+    const command = sendMock.mock.calls[0][0] as UpdateCommand;
+    expect(command).toBeInstanceOf(UpdateCommand);
+    expect(command.input.UpdateExpression).toContain('#l = :labels');
+    expect(command.input.ExpressionAttributeNames).toMatchObject({
+      '#l': 'labels',
+    });
+    expect(command.input.ExpressionAttributeValues).toMatchObject({
+      ':labels': ['Docs', 'Support'],
     });
   });
 
@@ -499,6 +611,7 @@ describe('update', () => {
         description: null,
         name: 'Existing',
         statuses: DEFAULT_PROJECT_STATUSES,
+        labels: [],
       },
     });
 
@@ -516,6 +629,7 @@ describe('update', () => {
       name: 'Existing',
       description: null,
       statuses: DEFAULT_PROJECT_STATUSES,
+      labels: [],
     });
 
     const command = sendMock.mock.calls[0][0] as UpdateCommand;
@@ -551,6 +665,7 @@ describe('remove', () => {
           userId: 'demo-user',
           name: 'Existing',
           description: null,
+          labels: [],
         },
       })
       .mockResolvedValueOnce({ Items: [] })
@@ -585,6 +700,7 @@ describe('remove', () => {
           userId: 'demo-user',
           name: 'Existing',
           description: null,
+          labels: [],
         },
       })
       .mockResolvedValueOnce({

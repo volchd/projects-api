@@ -152,6 +152,7 @@ describe('create', () => {
       priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
+      labels: [],
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -175,6 +176,7 @@ describe('create', () => {
       priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
+      labels: [],
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -222,6 +224,7 @@ describe('create', () => {
           SK: 'PROJECT',
           projectId: 'project-1',
           userId: 'demo-user',
+          labels: ['Existing'],
         },
       })
       .mockResolvedValueOnce({});
@@ -241,6 +244,78 @@ describe('create', () => {
 
     const putCommand = sendMock.mock.calls[1][0] as PutCommand;
     expect(putCommand.input.Item).toMatchObject({ priority: 'High' });
+  });
+
+  it('creates a task with labels and syncs project labels', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO'],
+          labels: ['Existing'],
+        },
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    randomUUIDMock.mockReturnValueOnce('task-with-labels');
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({
+          name: 'Write docs',
+          labels: ['  Docs  ', 'Spec'],
+        }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(201);
+    expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
+      labels: ['Docs', 'Spec'],
+    });
+
+    expect(sendMock).toHaveBeenCalledTimes(3);
+
+    const putCommand = sendMock.mock.calls[1][0] as PutCommand;
+    expect(putCommand).toBeInstanceOf(PutCommand);
+    expect(putCommand.input.Item).toMatchObject({
+      labels: ['Docs', 'Spec'],
+    });
+
+    const ensureCommand = sendMock.mock.calls[2][0] as UpdateCommand;
+    expect(ensureCommand).toBeInstanceOf(UpdateCommand);
+    expect(ensureCommand.input).toMatchObject({
+      TableName: 'ProjectsTable',
+      Key: { PK: 'PROJECT#project-1', SK: 'PROJECT' },
+      ExpressionAttributeNames: {
+        '#labels': 'labels',
+        '#updatedAt': 'updatedAt',
+      },
+    });
+    expect(ensureCommand.input.ExpressionAttributeValues).toMatchObject({
+      ':labels': ['Docs', 'Existing', 'Spec'],
+    });
+  });
+
+  it('rejects invalid labels input', async () => {
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({
+          name: 'Write docs',
+          labels: 'not-an-array',
+        }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'labels must be an array of non-empty strings if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid priority', async () => {
@@ -357,6 +432,7 @@ describe('get', () => {
       priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
+      labels: [],
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -416,6 +492,7 @@ describe('listByProject', () => {
             name: 'Task A',
             description: null,
             status: 'TODO',
+            labels: ['Docs'],
             createdAt: '2024-01-01T00:00:00.000Z',
             updatedAt: '2024-01-01T00:00:00.000Z',
           },
@@ -428,6 +505,7 @@ describe('listByProject', () => {
             name: 'Task B',
             description: 'details',
             status: 'TODO',
+            labels: [],
             createdAt: '2024-01-01T00:00:00.000Z',
             updatedAt: '2024-01-01T00:00:00.000Z',
           },
@@ -452,6 +530,7 @@ describe('listByProject', () => {
           priority: DEFAULT_TASK_PRIORITY,
           startDate: null,
           dueDate: null,
+          labels: ['Docs'],
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -464,6 +543,7 @@ describe('listByProject', () => {
           priority: DEFAULT_TASK_PRIORITY,
           startDate: null,
           dueDate: null,
+          labels: [],
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -600,6 +680,7 @@ describe('update', () => {
           description: 'Updated description',
           status: 'IN PROGRESS',
           priority: DEFAULT_TASK_PRIORITY,
+          labels: [],
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -626,6 +707,7 @@ describe('update', () => {
       priority: DEFAULT_TASK_PRIORITY,
       startDate: null,
       dueDate: null,
+      labels: [],
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -680,6 +762,7 @@ describe('update', () => {
           description: null,
           status: 'TODO',
           priority: 'Urgent',
+          labels: [],
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-02T00:00:00.000Z',
         },
@@ -715,6 +798,7 @@ describe('update', () => {
         projectId: 'project-1',
         userId: 'demo-user',
         statuses: ['TODO'],
+        labels: [],
       },
     });
 
@@ -728,6 +812,93 @@ describe('update', () => {
     expect(response.statusCode).toBe(400);
     expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
       'priority must be one of None, Low, Normal, High, Urgent if provided',
+    );
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('updates labels and syncs project labels', async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: {
+          PK: 'PROJECT#project-1',
+          SK: 'PROJECT',
+          projectId: 'project-1',
+          userId: 'demo-user',
+          statuses: ['TODO'],
+          labels: ['Existing'],
+        },
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        Attributes: {
+          PK: 'PROJECT#project-1',
+          SK: 'TASK#task-1',
+          projectId: 'project-1',
+          taskId: 'task-1',
+          userId: 'demo-user',
+          name: 'Task name',
+          description: null,
+          status: 'TODO',
+          priority: DEFAULT_TASK_PRIORITY,
+          labels: ['Existing', 'Spec'],
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-02T00:00:00.000Z',
+        },
+      });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+        body: JSON.stringify({ labels: ['Spec', 'Existing'] }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(parseBody<Record<string, unknown>>(response.body)).toMatchObject({
+      labels: ['Existing', 'Spec'],
+    });
+
+    expect(sendMock).toHaveBeenCalledTimes(3);
+
+    const ensureCommand = sendMock.mock.calls[1][0] as UpdateCommand;
+    expect(ensureCommand).toBeInstanceOf(UpdateCommand);
+    expect(ensureCommand.input.ExpressionAttributeValues).toMatchObject({
+      ':labels': ['Existing', 'Spec'],
+    });
+
+    const taskUpdateCommand = sendMock.mock.calls[2][0] as UpdateCommand;
+    expect(taskUpdateCommand).toBeInstanceOf(UpdateCommand);
+    expect(taskUpdateCommand.input.ExpressionAttributeNames).toMatchObject({
+      '#l': 'labels',
+      '#u': 'updatedAt',
+    });
+    expect(taskUpdateCommand.input.ExpressionAttributeValues).toMatchObject({
+      ':labels': ['Existing', 'Spec'],
+    });
+  });
+
+  it('rejects invalid labels during update', async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: {
+        PK: 'PROJECT#project-1',
+        SK: 'PROJECT',
+        projectId: 'project-1',
+        userId: 'demo-user',
+        statuses: ['TODO'],
+        labels: [],
+      },
+    });
+
+    const response = await update(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+        body: JSON.stringify({ labels: 'not-array' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(400);
+    expect(parseBody<{ errors: string[] }>(response.body).errors).toContain(
+      'labels must be an array of non-empty strings if provided',
     );
     expect(sendMock).not.toHaveBeenCalled();
   });

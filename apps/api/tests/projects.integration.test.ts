@@ -59,6 +59,7 @@ interface ProjectAttributes {
   name: string;
   description: string | null;
   statuses: string[];
+  labels: string[];
 }
 
 interface ProjectRecord extends ProjectAttributes {
@@ -77,6 +78,7 @@ interface TaskRecord {
   status: string;
   createdAt: string;
   updatedAt: string;
+  labels: string[];
 }
 
 const createProject = async (
@@ -179,6 +181,7 @@ describe('projects integration', () => {
       name: 'Integration Project',
       description: 'Created via integration test',
       statuses: DEFAULT_PROJECT_STATUSES,
+      labels: [],
     });
 
     const deleteResponse = await remove(
@@ -222,6 +225,7 @@ describe('projects integration', () => {
       });
 
       expect(statusCode).toBe(201);
+      expect(created.labels).toEqual([]);
       project = created;
     });
 
@@ -268,6 +272,7 @@ describe('projects integration', () => {
         name: 'Existing Project',
         description: project!.description,
         statuses: project!.statuses,
+        labels: project!.labels,
       });
     });
 
@@ -291,7 +296,10 @@ describe('projects integration', () => {
             item.description === project!.description &&
             Array.isArray(item.statuses) &&
             item.statuses.length === project!.statuses.length &&
-            item.statuses.every((status, index) => status === project!.statuses[index]),
+            item.statuses.every((status, index) => status === project!.statuses[index]) &&
+            Array.isArray(item.labels) &&
+            item.labels.length === project!.labels.length &&
+            item.labels.every((label, index) => label === project!.labels[index]),
         ),
       ).toBe(true);
     });
@@ -315,6 +323,7 @@ describe('projects integration', () => {
         id: project!.id,
         description: 'Updated description',
         statuses: project!.statuses,
+        labels: project!.labels,
       });
 
       project = { ...project!, description: 'Updated description' };
@@ -335,6 +344,7 @@ describe('projects integration', () => {
       expect(updateResponse.statusCode).toBe(200);
       const updated = parseBody<ProjectRecord>(updateResponse.body);
       expect(updated.statuses).toEqual(['PLANNING', 'IN QA', 'RELEASED']);
+      expect(updated.labels).toEqual(project!.labels);
 
       const getResponse = await get(
         baseEvent({
@@ -345,8 +355,38 @@ describe('projects integration', () => {
       expect(getResponse.statusCode).toBe(200);
       const fetched = parseBody<ProjectRecord>(getResponse.body);
       expect(fetched.statuses).toEqual(['PLANNING', 'IN QA', 'RELEASED']);
+      expect(fetched.labels).toEqual(project!.labels);
 
-      project = { ...project!, statuses: fetched.statuses };
+      project = { ...project!, statuses: fetched.statuses, labels: fetched.labels };
+    });
+
+    it('updates project labels', async () => {
+      if (!dynamoAvailable) {
+        return;
+      }
+
+      const updateResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ labels: ['Docs', ' Support '] }),
+        }),
+      );
+
+      expect(updateResponse.statusCode).toBe(200);
+      const updated = parseBody<ProjectRecord>(updateResponse.body);
+      expect(updated.labels).toEqual(['Docs', 'Support']);
+
+      const getResponse = await get(
+        baseEvent({
+          pathParameters: { id: project!.id },
+        }),
+      );
+
+      expect(getResponse.statusCode).toBe(200);
+      const fetched = parseBody<ProjectRecord>(getResponse.body);
+      expect(fetched.labels).toEqual(['Docs', 'Support']);
+
+      project = { ...project!, labels: fetched.labels };
     });
 
     it('rejects invalid project statuses', async () => {
@@ -376,6 +416,34 @@ describe('projects integration', () => {
       expect(emptyResponse.statusCode).toBe(400);
       expect(parseBody<{ errors: string[] }>(emptyResponse.body).errors).toContain(
         'statuses must include at least one value',
+      );
+    });
+
+    it('rejects invalid project labels', async () => {
+      if (!dynamoAvailable) {
+        return;
+      }
+
+      const nonArrayResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ labels: 'Docs' }),
+        }),
+      );
+      expect(nonArrayResponse.statusCode).toBe(400);
+      expect(parseBody<{ errors: string[] }>(nonArrayResponse.body).errors).toContain(
+        'labels must be an array of non-empty strings if provided',
+      );
+
+      const duplicateResponse = await update(
+        baseEvent({
+          pathParameters: { id: project!.id },
+          body: JSON.stringify({ labels: ['Docs', 'docs'] }),
+        }),
+      );
+      expect(duplicateResponse.statusCode).toBe(400);
+      expect(parseBody<{ errors: string[] }>(duplicateResponse.body).errors).toContain(
+        'labels must contain unique values',
       );
     });
 
