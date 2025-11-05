@@ -19,6 +19,8 @@ export const DEFAULT_TASK_PRIORITY: TaskPriority = 'None';
 export const isTaskPriority = (value: unknown): value is TaskPriority =>
   typeof value === 'string' && TASK_PRIORITY_VALUES.includes(value as TaskPriority);
 
+export type TaskLabel = string;
+
 export interface Task extends TaskKey {
   name: string;
   description: string | null;
@@ -26,6 +28,7 @@ export interface Task extends TaskKey {
   priority: TaskPriority;
   startDate: string | null;
   dueDate: string | null;
+  labels: TaskLabel[];
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +40,7 @@ export interface CreateTaskPayload {
   priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
+  labels?: TaskLabel[];
 }
 
 export interface UpdateTaskPayload {
@@ -46,4 +50,5 @@ export interface UpdateTaskPayload {
   priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
+  labels?: TaskLabel[];
 }

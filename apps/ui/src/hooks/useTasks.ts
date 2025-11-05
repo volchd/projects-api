@@ -134,6 +134,7 @@ export const useTasks = (projectId: string | null, statuses: readonly TaskStatus
           priority: payload.priority ?? DEFAULT_PRIORITY,
           startDate: payload.startDate ?? null,
           dueDate: payload.dueDate ?? null,
+          labels: payload.labels ?? [],
         });
 
         await refresh(currentProjectId);

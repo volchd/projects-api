@@ -32,6 +32,7 @@ import type {
   UpdateProjectPayload,
   ValidationResult,
   ProjectStatus,
+  ProjectLabel,
 } from './projects.types';
 import { DEFAULT_PROJECT_STATUSES, MAX_PROJECT_STATUS_LENGTH } from './projects.types';
 
@@ -92,6 +93,93 @@ const ensureStatuses = (value: unknown): ProjectStatus[] => {
   return statuses.length ? statuses : [...DEFAULT_PROJECT_STATUSES];
 };
 
+const MAX_PROJECT_LABEL_LENGTH = 40;
+
+const normalizeLabel = (label: unknown): ProjectLabel | null => {
+  if (typeof label !== 'string') {
+    return null;
+  }
+
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const collapsed = trimmed.replace(/\s+/g, ' ');
+  if (collapsed.length > MAX_PROJECT_LABEL_LENGTH) {
+    return null;
+  }
+
+  return collapsed;
+};
+
+const ensureLabels = (value: unknown): ProjectLabel[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const labels: ProjectLabel[] = [];
+
+  for (const candidate of value) {
+    const normalized = normalizeLabel(candidate);
+    if (!normalized) {
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    labels.push(normalized);
+  }
+
+  labels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  return labels;
+};
+
+const parseLabelsInput = (value: unknown, errors: string[]): ProjectLabel[] | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(value)) {
+    errors.push('labels must be an array of non-empty strings if provided');
+    return undefined;
+  }
+
+  const seen = new Set<string>();
+  const labels: ProjectLabel[] = [];
+  let hasInvalid = false;
+  let hasDuplicate = false;
+
+  for (const item of value) {
+    const normalized = normalizeLabel(item);
+    if (!normalized) {
+      hasInvalid = true;
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      hasDuplicate = true;
+      continue;
+    }
+    seen.add(key);
+    labels.push(normalized);
+  }
+
+  if (hasInvalid) {
+    errors.push(`labels must contain non-empty strings up to ${MAX_PROJECT_LABEL_LENGTH} characters`);
+  }
+
+  if (hasDuplicate) {
+    errors.push('labels must contain unique values');
+  }
+
+  labels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  return labels;
+};
+
 const parseStatusesInput = (value: unknown, errors: string[]): ProjectStatus[] | undefined => {
   if (value === undefined) {
     return undefined;
@@ -150,6 +238,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
   const name = data.name;
   const description = toStringOrNull(data.description);
   let statuses: ProjectStatus[] | undefined;
+  let labels: ProjectLabel[] | undefined;
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -163,6 +252,10 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
     statuses = parseStatusesInput(data.statuses, errors);
   }
 
+  if ('labels' in data) {
+    labels = parseLabelsInput(data.labels, errors);
+  }
+
   if (errors.length) {
     return { errors };
   }
@@ -172,6 +265,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPay
       name: name as string,
       description,
       statuses,
+      labels,
     },
     errors,
   };
@@ -208,6 +302,13 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateProjectPay
     const parsedStatuses = parseStatusesInput(data.statuses, errors);
     if (parsedStatuses) {
       result.statuses = parsedStatuses;
+    }
+  }
+
+  if ('labels' in data) {
+    const parsedLabels = parseLabelsInput(data.labels, errors);
+    if (parsedLabels !== undefined) {
+      result.labels = parsedLabels;
     }
   }
 
@@ -251,10 +352,11 @@ const toProject = (item: Record<string, unknown> | undefined): Project | undefin
 
   return {
     id: String(item.projectId ?? item.id),
-   userId: String(item.userId),
-   name: String(item.name),
-   description: (item.description ?? null) as string | null,
+    userId: String(item.userId),
+    name: String(item.name),
+    description: (item.description ?? null) as string | null,
     statuses: ensureStatuses(item.statuses),
+    labels: ensureLabels(item.labels),
   };
 };
 
@@ -323,6 +425,7 @@ export const create = async (
     const userId = resolveUserId(event);
     const projectId = randomUUID();
     const statuses = value.statuses ?? [...DEFAULT_PROJECT_STATUSES];
+    const labels = value.labels ?? [];
     const now = new Date().toISOString();
 
     const item = {
@@ -337,6 +440,7 @@ export const create = async (
       GSI1PK: projectGsiPk(userId),
       GSI1SK: projectGsiSk(projectId),
       statuses,
+      labels,
       createdAt: now,
       updatedAt: now,
     };
@@ -441,6 +545,12 @@ export const update = async (
       names.push('#s = :statuses');
       exprNames['#s'] = 'statuses';
       exprValues[':statuses'] = value.statuses;
+    }
+
+    if (value.labels !== undefined) {
+      names.push('#l = :labels');
+      exprNames['#l'] = 'labels';
+      exprValues[':labels'] = value.labels;
     }
 
     if (names.length === 0) {

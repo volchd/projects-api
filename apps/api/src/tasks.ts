@@ -29,6 +29,7 @@ import { DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS, isTaskPriority } from './ta
 import type {
   CreateTaskPayload,
   Task,
+  TaskLabel,
   TaskPriority,
   TaskStatus,
   UpdateTaskPayload,
@@ -166,6 +167,97 @@ const coerceProjectStatuses = (value: unknown): ProjectStatus[] => {
   return statuses.length ? statuses : [...DEFAULT_PROJECT_STATUSES];
 };
 
+const MAX_TASK_LABEL_LENGTH = 40;
+
+const normalizeTaskLabel = (label: unknown): TaskLabel | null => {
+  if (typeof label !== 'string') {
+    return null;
+  }
+
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const collapsed = trimmed.replace(/\s+/g, ' ');
+  if (collapsed.length > MAX_TASK_LABEL_LENGTH) {
+    return null;
+  }
+
+  return collapsed;
+};
+
+const parseTaskLabelsInput = (value: unknown, errors: string[]): TaskLabel[] | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(value)) {
+    errors.push('labels must be an array of non-empty strings if provided');
+    return undefined;
+  }
+
+  const seen = new Set<string>();
+  const labels: TaskLabel[] = [];
+  let hasInvalid = false;
+  let hasDuplicate = false;
+
+  for (const item of value) {
+    const normalized = normalizeTaskLabel(item);
+    if (!normalized) {
+      hasInvalid = true;
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      hasDuplicate = true;
+      continue;
+    }
+
+    seen.add(key);
+    labels.push(normalized);
+  }
+
+  if (hasInvalid) {
+    errors.push(`labels must contain non-empty strings up to ${MAX_TASK_LABEL_LENGTH} characters`);
+  }
+
+  if (hasDuplicate) {
+    errors.push('labels must contain unique values');
+  }
+
+  labels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  return labels;
+};
+
+const coerceProjectLabels = (value: unknown): TaskLabel[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const labels: TaskLabel[] = [];
+
+  for (const candidate of value) {
+    const normalized = normalizeTaskLabel(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    labels.push(normalized);
+  }
+
+  labels.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  return labels;
+};
+
 function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayload> {
   const errors: string[] = [];
 
@@ -183,6 +275,7 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
   const hasDueDate = Object.prototype.hasOwnProperty.call(data, 'dueDate');
   let startDate: string | null | undefined;
   let dueDate: string | null | undefined;
+  let labels: TaskLabel[] | undefined;
 
   if (typeof name !== 'string') {
     errors.push('name (string) is required');
@@ -218,6 +311,10 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
     dueDate = normalizeDateInput(data.dueDate, 'dueDate', errors);
   }
 
+  if ('labels' in data) {
+    labels = parseTaskLabelsInput(data.labels, errors);
+  }
+
   if (!errors.length) {
     validateDateOrder(startDate, dueDate, errors);
   }
@@ -239,6 +336,10 @@ function parseCreatePayload(payload: unknown): ValidationResult<CreateTaskPayloa
 
   if (hasDueDate) {
     result.dueDate = dueDate ?? null;
+  }
+
+  if (labels !== undefined) {
+    result.labels = labels;
   }
 
   return {
@@ -308,6 +409,13 @@ function parseUpdatePayload(payload: unknown): ValidationResult<UpdateTaskPayloa
     }
   }
 
+  if ('labels' in data) {
+    const parsedLabels = parseTaskLabelsInput(data.labels, errors);
+    if (parsedLabels !== undefined) {
+      result.labels = parsedLabels;
+    }
+  }
+
   if (!errors.length) {
     validateDateOrder(result.startDate, result.dueDate, errors);
   }
@@ -329,10 +437,15 @@ const handleError = (error: unknown): APIGatewayProxyStructuredResultV2 => {
   });
 };
 
+type ProjectContext = {
+  statuses: ProjectStatus[];
+  labels: TaskLabel[];
+};
+
 const loadProjectForUser = async (
   projectId: string,
   userId: string,
-): Promise<ProjectStatus[] | null> => {
+): Promise<ProjectContext | null> => {
   const res = await ddbDocClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
@@ -349,7 +462,59 @@ const loadProjectForUser = async (
     return null;
   }
 
-  return coerceProjectStatuses(item.statuses);
+  return {
+    statuses: coerceProjectStatuses(item.statuses),
+    labels: coerceProjectLabels(item.labels),
+  };
+};
+
+const ensureProjectLabels = async (
+  projectId: string,
+  userId: string,
+  currentLabels: TaskLabel[],
+  labelsToEnsure: TaskLabel[],
+): Promise<void> => {
+  if (!labelsToEnsure.length) {
+    return;
+  }
+
+  const seen = new Set(currentLabels.map((label) => label.toLowerCase()));
+  const additions: TaskLabel[] = [];
+
+  for (const label of labelsToEnsure) {
+    const key = label.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    additions.push(label);
+  }
+
+  if (!additions.length) {
+    return;
+  }
+
+  const updatedLabels = [...currentLabels, ...additions].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' }),
+  );
+
+  await ddbDocClient.send(
+    new UpdateCommand({
+      TableName: TABLE_NAME,
+      Key: { PK: projectPk(projectId), SK: projectSk() },
+      UpdateExpression: 'SET #labels = :labels, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#labels': 'labels',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':labels': updatedLabels,
+        ':updatedAt': new Date().toISOString(),
+        ':user': userId,
+      },
+      ConditionExpression: 'attribute_exists(PK) AND userId = :user',
+    }),
+  );
 };
 
 const toTaskStatus = (status: unknown): TaskStatus => {
@@ -376,6 +541,32 @@ const toDateValue = (value: unknown): string | null => {
   return null;
 };
 
+const toTaskLabels = (value: unknown): TaskLabel[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const labels: TaskLabel[] = [];
+
+  for (const candidate of value) {
+    const normalized = normalizeTaskLabel(candidate);
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    labels.push(normalized);
+  }
+
+  return labels;
+};
+
 const toTask = (item: Record<string, unknown> | undefined): Task | undefined => {
   if (!item) {
     return undefined;
@@ -394,6 +585,7 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     priority: toTaskPriority(item.priority),
     startDate: toDateValue(item.startDate),
     dueDate: toDateValue(item.dueDate),
+    labels: toTaskLabels(item.labels),
     createdAt: String(item.createdAt),
     updatedAt: String(item.updatedAt),
   };
@@ -419,16 +611,18 @@ export const create = async (
     }
 
     const userId = resolveUserId(event);
-    const projectStatuses = await loadProjectForUser(projectId, userId);
-    if (!projectStatuses) {
+    const projectContext = await loadProjectForUser(projectId, userId);
+    if (!projectContext) {
       return json(404, { message: 'Project not found' });
     }
 
+    const { statuses: projectStatuses, labels: projectLabels } = projectContext;
     const fallbackStatus = projectStatuses[0] ?? DEFAULT_TASK_STATUS;
     const targetStatus = value.status ?? fallbackStatus;
     const priority = value.priority ?? DEFAULT_TASK_PRIORITY;
     const startDate = value.startDate ?? null;
     const dueDate = value.dueDate ?? null;
+    const labels = value.labels ?? [];
 
     if (!projectStatuses.includes(targetStatus)) {
       return json(400, {
@@ -451,6 +645,7 @@ export const create = async (
       priority,
       startDate,
       dueDate,
+      labels,
       createdAt: now,
       updatedAt: now,
       entityType: TASK_ENTITY_TYPE,
@@ -463,6 +658,18 @@ export const create = async (
         ConditionExpression: 'attribute_not_exists(PK)',
       }),
     );
+
+    try {
+      await ensureProjectLabels(projectId, userId, projectLabels, labels);
+    } catch (labelError) {
+      await ddbDocClient.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: projectPk(projectId), SK: taskSk(taskId) },
+        }),
+      );
+      throw labelError;
+    }
 
     return json(201, toTask(item)!);
   } catch (error) {
@@ -518,8 +725,8 @@ export const listByProject = async (
     }
 
     const userId = resolveUserId(event);
-    const projectStatuses = await loadProjectForUser(projectId, userId);
-    if (!projectStatuses) {
+    const projectContext = await loadProjectForUser(projectId, userId);
+    if (!projectContext) {
       return json(404, { message: 'Project not found' });
     }
 
@@ -568,10 +775,14 @@ export const update = async (
     }
 
     const userId = resolveUserId(event);
-    const projectStatuses = await loadProjectForUser(projectId, userId);
-    if (!projectStatuses) {
+    const projectContext = await loadProjectForUser(projectId, userId);
+    if (!projectContext) {
       return json(404, { message: 'Project not found' });
     }
+
+    const { statuses: projectStatuses, labels: projectLabels } = projectContext;
+    const hasLabelsUpdate = Object.prototype.hasOwnProperty.call(value, 'labels');
+    const labelsForUpdate = hasLabelsUpdate ? value.labels ?? [] : undefined;
 
     if (Object.prototype.hasOwnProperty.call(value, 'status') && value.status) {
       if (!projectStatuses.includes(value.status)) {
@@ -579,6 +790,10 @@ export const update = async (
           errors: ['status must match one of the project statuses'],
         });
       }
+    }
+
+    if (hasLabelsUpdate) {
+      await ensureProjectLabels(projectId, userId, projectLabels, labelsForUpdate ?? []);
     }
 
     const names: string[] = [];
@@ -623,6 +838,12 @@ export const update = async (
       names.push('#dd = :dueDate');
       exprNames['#dd'] = 'dueDate';
       exprValues[':dueDate'] = value.dueDate ?? null;
+    }
+
+    if (hasLabelsUpdate) {
+      names.push('#l = :labels');
+      exprNames['#l'] = 'labels';
+      exprValues[':labels'] = labelsForUpdate ?? [];
     }
 
     if (names.length === 0) {

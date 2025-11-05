@@ -5,18 +5,21 @@ export interface Project {
   name: string;
   description: string | null;
   statuses: ProjectStatus[];
+  labels: ProjectLabel[];
 }
 
 export interface CreateProjectPayload {
   name: string;
   description?: string | null;
   statuses?: ProjectStatus[];
+  labels?: ProjectLabel[];
 }
 
 export interface UpdateProjectPayload {
   name?: string;
   description?: string | null;
   statuses?: ProjectStatus[];
+  labels?: ProjectLabel[];
 }
 
 export interface ValidationResult<T> {
@@ -34,3 +37,5 @@ export type ProjectStatus = string;
 export const DEFAULT_PROJECT_STATUSES: ProjectStatus[] = ['TODO', 'IN PROGRESS', 'COMPLETE'];
 
 export const MAX_PROJECT_STATUS_LENGTH = 40;
+
+export type ProjectLabel = string;

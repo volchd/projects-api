@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import type { Task, TaskPriority, TaskStatus } from '../types';
+import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
@@ -11,11 +11,13 @@ type TaskEditorValues = {
   priority: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
+  labels: TaskLabel[];
 };
 
 type TaskListProps = {
   tasks: Task[];
   statuses: readonly TaskStatus[];
+  labels: readonly TaskLabel[];
   isLoading: boolean;
   error: string | null;
   creatingStatus: TaskStatus | null;
@@ -29,6 +31,7 @@ type TaskListProps = {
 export const TaskList = ({
   tasks,
   statuses,
+  labels,
   isLoading,
   error,
   creatingStatus,
@@ -167,6 +170,7 @@ export const TaskList = ({
           priority: task.priority,
           startDate: task.startDate,
           dueDate: task.dueDate,
+          labels: task.labels,
         });
       } catch {
         // Errors surface via parent handlers.
@@ -220,6 +224,7 @@ export const TaskList = ({
                   mode="create"
                   status={statusOption.key}
                   statuses={statusOptions}
+                  availableLabels={labels}
                   isSubmitting={isCreating(statusOption.key)}
                   onSubmit={handleCreateSubmit}
                   onCancel={() => setActiveCreateStatus(null)}
@@ -262,6 +267,15 @@ export const TaskList = ({
                       </svg>
                     </button>
                   </header>
+                  {task.labels.length ? (
+                    <div className="task-card__labels">
+                      {task.labels.map((label) => (
+                        <span key={`${task.taskId}-label-${label.toLowerCase()}`} className="task-card__label">
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {task.description ? <p>{task.description}</p> : null}
                 </article>
               ))}

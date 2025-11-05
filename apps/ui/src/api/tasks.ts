@@ -1,5 +1,5 @@
 import { apiUrl, parseError } from './client';
-import type { Task, TaskPriority, TaskStatus } from '../types';
+import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
 
 export type CreateTaskPayload = {
   name: string;
@@ -8,6 +8,7 @@ export type CreateTaskPayload = {
   priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
+  labels?: TaskLabel[];
 };
 
 export type UpdateTaskPayload = {
@@ -17,6 +18,7 @@ export type UpdateTaskPayload = {
   priority?: TaskPriority;
   startDate?: string | null;
   dueDate?: string | null;
+  labels?: TaskLabel[];
 };
 
 export const fetchTasks = async (projectId: string): Promise<Task[]> => {
@@ -40,6 +42,7 @@ export const createTask = async (projectId: string, payload: CreateTaskPayload) 
       priority: payload.priority ?? 'None',
       startDate: payload.startDate ?? null,
       dueDate: payload.dueDate ?? null,
+      labels: payload.labels ?? [],
     }),
   });
 

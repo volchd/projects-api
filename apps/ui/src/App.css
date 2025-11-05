@@ -1019,6 +1019,135 @@
   color: #475569;
 }
 
+.task-editor__labels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-editor__labels-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.task-editor__label-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-editor__label-option {
+  border: 1px solid #cbd5f5;
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.task-editor__label-option:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.task-editor__label-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.task-editor__label-option--active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.task-editor__label-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-editor__label-add input {
+  flex: 1;
+}
+
+.task-editor__label-add button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.task-editor__label-add button:focus-visible {
+  outline: 2px solid #1e3a8a;
+  outline-offset: 2px;
+}
+
+.task-editor__label-add button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.task-editor__label-placeholder {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.task-editor__selected-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-editor__selected-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e0e7ff;
+  color: #1e3a8a;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.task-editor__selected-label button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.task-editor__selected-label button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.task-editor__selected-label button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.task-editor__label-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .task-editor__actions {
   display: flex;
   align-items: center;
@@ -1133,6 +1262,24 @@
   font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
+}
+
+.task-card__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.task-card__label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #1e3a8a;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .task-card button {

@@ -32,6 +32,7 @@ function App() {
     updateProject,
     deleteProject,
     updateProjectStatuses,
+    refresh: refreshProjects,
   } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projectFormMode, setProjectFormMode] = useState<ProjectFormMode>(null);
@@ -58,6 +59,7 @@ function App() {
     [sortedProjects, selectedProjectId],
   );
   const activeStatuses = selectedProject?.statuses ?? EMPTY_STATUSES;
+  const activeLabels = selectedProject?.labels ?? [];
   const defaultModalStatus = activeStatuses[0] ?? DEFAULT_TASK_STATUSES[0];
   const statusOptionsForModal = useMemo(
     () => toStatusOptions(activeStatuses.length ? activeStatuses : DEFAULT_TASK_STATUSES),
@@ -422,6 +424,7 @@ function App() {
       priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
+      labels: string[];
     }) => {
       try {
         setBoardError(null);
@@ -432,14 +435,16 @@ function App() {
           priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
+          labels: values.labels,
         });
+        await refreshProjects().catch(() => {});
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
         setBoardError(message);
         throw err;
       }
     },
-    [createTask],
+    [createTask, refreshProjects],
   );
 
   const handleTaskModalSubmit = useCallback(
@@ -450,6 +455,7 @@ function App() {
       priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
+      labels: string[];
     }) => {
       try {
         setTaskModalSubmitting(true);
@@ -462,7 +468,9 @@ function App() {
           priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
+          labels: values.labels,
         });
+        await refreshProjects().catch(() => {});
         setTaskModalOpen(false);
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
@@ -471,7 +479,7 @@ function App() {
         setTaskModalSubmitting(false);
       }
     },
-    [createTask],
+    [createTask, refreshProjects],
   );
 
   const handleCommandSelect = useCallback(
@@ -498,6 +506,7 @@ function App() {
         priority: TaskPriority;
         startDate?: string | null;
         dueDate?: string | null;
+        labels: string[];
       },
     ) => {
       try {
@@ -509,14 +518,16 @@ function App() {
           priority: values.priority,
           startDate: values.startDate ?? null,
           dueDate: values.dueDate ?? null,
+          labels: values.labels,
         });
+        await refreshProjects().catch(() => {});
       } catch (err) {
         const message = err instanceof Error ? err.message : UNKNOWN_ERROR;
         setBoardError(message);
         throw err;
       }
     },
-    [updateTask],
+    [refreshProjects, updateTask],
   );
 
   const handleTaskEditRequest = useCallback(
@@ -541,6 +552,7 @@ function App() {
       priority: TaskPriority;
       startDate?: string | null;
       dueDate?: string | null;
+      labels: string[];
     }) => {
       if (!taskEditModalId) {
         return;
@@ -678,6 +690,7 @@ function App() {
                 key={`${selectedProjectId ?? 'no-project'}-board`}
                 tasks={tasks}
                 statuses={activeStatuses}
+                labels={activeLabels}
                 isLoading={tasksLoading}
                 error={tasksError}
                 creatingStatus={creatingTaskStatus}
@@ -695,6 +708,7 @@ function App() {
                 key={`${selectedProjectId ?? 'no-project'}-list`}
                 tasks={tasks}
                 statuses={activeStatuses}
+                labels={activeLabels}
                 isLoading={tasksLoading}
                 error={tasksError}
                 creatingStatus={creatingTaskStatus}
@@ -788,6 +802,7 @@ function App() {
           mode="create"
           status={defaultModalStatus}
           statuses={statusOptionsForModal}
+          availableLabels={activeLabels}
           isSubmitting={taskModalSubmitting}
           error={taskModalError}
           onSubmit={handleTaskModalSubmit}
@@ -814,12 +829,14 @@ function App() {
             mode="edit"
             status={taskBeingEdited.status}
             statuses={statusOptionsForModal}
+            availableLabels={activeLabels}
             initialValues={{
               name: taskBeingEdited.name,
               description: taskBeingEdited.description,
               priority: taskBeingEdited.priority,
               startDate: taskBeingEdited.startDate,
               dueDate: taskBeingEdited.dueDate,
+              labels: taskBeingEdited.labels,
             }}
             isSubmitting={
               taskEditModalSubmitting || updatingTaskId === taskBeingEdited.taskId
