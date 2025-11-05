@@ -69,7 +69,7 @@ export const ConfirmDialog = ({
         <div className="confirm-dialog__actions">
           <button
             type="button"
-            className="confirm-dialog__button"
+            className="confirm-dialog__button btn btn-secondary"
             onClick={onCancel}
             disabled={isConfirming}
           >
@@ -77,7 +77,7 @@ export const ConfirmDialog = ({
           </button>
           <button
             type="button"
-            className="confirm-dialog__button confirm-dialog__button--danger"
+            className="confirm-dialog__button btn btn-danger"
             onClick={onConfirm}
             disabled={isConfirming}
           >

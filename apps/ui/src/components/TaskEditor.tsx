@@ -421,10 +421,14 @@ export const TaskEditor = ({
           <span />
         )}
         <div className="task-editor__buttons">
-          <button type="submit" disabled={isSubmitting || isDeleting || !values.name.trim()}>
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={isSubmitting || isDeleting || !values.name.trim()}
+          >
             {submitLabel}
           </button>
-          <button type="button" onClick={onCancel} disabled={isSubmitting || isDeleting}>
+          <button className="btn btn-secondary" type="button" onClick={onCancel} disabled={isSubmitting || isDeleting}>
             Cancel
           </button>
         </div>

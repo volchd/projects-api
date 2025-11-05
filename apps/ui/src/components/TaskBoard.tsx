@@ -477,7 +477,7 @@ export const TaskBoard = ({
 
         return (
           <div
-            className={`board__column${
+            className={`board__column surface${
               isDragTarget ? ' board__column--droppable' : ''
             }${isColumnDragTarget ? ' board__column--sortable-target' : ''}${
               isColumnDragging ? ' board__column--dragging' : ''
@@ -545,7 +545,7 @@ export const TaskBoard = ({
               {columnTasks.map((task) => (
                 <article
                   key={task.taskId}
-                  className={`task-card${
+                  className={`task-card surface${
                     draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
                   }`}
                   draggable
@@ -588,7 +588,7 @@ export const TaskBoard = ({
             {activeCreateStatus === column.key ? null : (
               <button
                 type="button"
-                className="board__add-task"
+                className="board__add-task btn"
                 onClick={() => {
                   setActiveCreateStatus(column.key);
                 }}
@@ -602,7 +602,7 @@ export const TaskBoard = ({
         );
       })}
       <div
-        className={`board__column board__column--add-status${
+        className={`board__column surface board__column--add-status${
           isDragOverAddColumn ? ' board__column--add-status-target' : ''
         }`}
         onDragOver={handleStatusDragEnterAddColumn}
@@ -631,10 +631,19 @@ export const TaskBoard = ({
               </div>
             ) : null}
             <div className="board__add-status-actions">
-              <button type="submit" disabled={isUpdatingStatuses || !newStatusName.trim()}>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={isUpdatingStatuses || !newStatusName.trim()}
+              >
                 {isUpdatingStatuses ? 'Saving…' : 'Save'}
               </button>
-              <button type="button" onClick={handleCancelAddStatus} disabled={isUpdatingStatuses}>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleCancelAddStatus}
+                disabled={isUpdatingStatuses}
+              >
                 Cancel
               </button>
             </div>

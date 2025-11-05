@@ -190,7 +190,7 @@ export const TaskList = ({
 
         return (
           <section
-            className={`list-view__section${isDragTarget ? ' list-view__section--droppable' : ''}`}
+            className={`list-view__section surface${isDragTarget ? ' list-view__section--droppable' : ''}`}
             key={statusOption.key}
           >
             <header className="list-view__section-header">
@@ -201,7 +201,7 @@ export const TaskList = ({
               {activeCreateStatus === statusOption.key ? null : (
                 <button
                   type="button"
-                  className="list-view__add"
+                  className="list-view__add btn"
                   onClick={() => {
                     setActiveCreateStatus(statusOption.key);
                   }}
@@ -239,7 +239,7 @@ export const TaskList = ({
 
               {statusTasks.map((task) => (
                 <article
-                  className={`task-card task-card--list${
+                  className={`task-card surface task-card--list${
                     draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
                   }`}
                   key={task.taskId}

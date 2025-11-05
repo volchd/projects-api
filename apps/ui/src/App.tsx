@@ -681,7 +681,7 @@ function App() {
           ) : null}
 
           {projectFormMode === null && !hasProject ? (
-            <div className="board__empty">Choose a project to view its tasks.</div>
+            <div className="board__empty surface">Choose a project to view its tasks.</div>
           ) : null}
 
           {projectFormMode === null && hasProject ? (

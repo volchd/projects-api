@@ -56,7 +56,7 @@ export const ProjectForm = ({
   };
 
   return (
-    <form className="project-editor" onSubmit={handleSubmit}>
+    <form className="project-editor surface" onSubmit={handleSubmit}>
       <div className="project-editor__field">
         <label htmlFor={`${mode}-project-name`} className="project-editor__label">
           Project name
@@ -87,11 +87,11 @@ export const ProjectForm = ({
       ) : null}
       {error ? <div className="board__alert board__alert--error">{error}</div> : null}
       <div className="project-editor__actions">
-        <button type="submit" disabled={isSubmitting}>
+        <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? (mode === 'create' ? 'Creating…' : 'Saving…') : labels.submit}
         </button>
         {onCancel ? (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
+          <button className="btn btn-secondary" type="button" onClick={onCancel} disabled={isSubmitting}>
             {labels.cancel}
           </button>
         ) : null}
