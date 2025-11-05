@@ -43,33 +43,39 @@ export const ConfirmDialog = ({
   }
 
   return (
-    <div className="confirm-dialog__backdrop" role="presentation">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/40"
+      role="presentation"
+    >
       <div
-        className="confirm-dialog"
+        className="flex flex-col gap-4 p-6 bg-white rounded-2xl shadow-xl dark:bg-gray-800 w-full max-w-sm"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
         ref={containerRef}
       >
-        <div className="confirm-dialog__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
+        <div
+          className="inline-flex items-center justify-center w-14 h-14 bg-red-100 rounded-full dark:bg-red-900/40 text-red-700 dark:text-red-300"
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 24 24" focusable="false" className="w-7 h-7">
             <path
               fill="currentColor"
               d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 14h-2v-2h2Zm0-4h-2V7h2Z"
             />
           </svg>
         </div>
-        <h2 id="confirm-dialog-title" className="confirm-dialog__title">
+        <h2 id="confirm-dialog-title" className="text-xl font-bold">
           {title}
         </h2>
-        <p id="confirm-dialog-description" className="confirm-dialog__description">
+        <p id="confirm-dialog-description" className="text-gray-600 dark:text-gray-300">
           {description}
         </p>
-        <div className="confirm-dialog__actions">
+        <div className="flex justify-end gap-3 mt-2">
           <button
             type="button"
-            className="confirm-dialog__button btn btn-secondary"
+            className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-gray-900 transition-colors bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-50 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={onCancel}
             disabled={isConfirming}
           >
@@ -77,7 +83,7 @@ export const ConfirmDialog = ({
           </button>
           <button
             type="button"
-            className="confirm-dialog__button btn btn-danger"
+            className="inline-flex items-center justify-center h-10 px-5 text-sm font-semibold text-white transition-colors bg-red-600 rounded-lg shadow-lg hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={onConfirm}
             disabled={isConfirming}
           >

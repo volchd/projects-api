@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import './App.css';
 import { useProjects } from './hooks/useProjects';
 import { useTasks } from './hooks/useTasks';
 import { ProjectSidebar } from './components/ProjectSidebar';
@@ -645,7 +644,7 @@ function App() {
         : false;
 
   return (
-    <div className="app">
+    <div className="flex items-stretch w-full min-h-screen p-1.5 text-gray-900 bg-gray-50 dark:bg-gray-900 dark:text-gray-50">
       <ProjectSidebar
         projects={sortedProjects}
         isLoading={projectsLoading}
@@ -658,14 +657,14 @@ function App() {
         onDeleteProject={handleDeleteRequest}
       />
 
-      <main className="main">
+      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-full overflow-hidden">
         <Topbar
           activeView={taskView}
           onSelectView={handleSelectView}
           onOpenCommandPalette={handleOpenCommandPalette}
         />
-        <section className="board">
-          <header className="board__header">
+        <section className="flex flex-col flex-1 gap-4 p-6 overflow-hidden min-h-0">
+          <header className="relative flex flex-col gap-2 p-4 overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-md dark:bg-gray-800 dark:border-gray-700">
             <h1>
               {projectFormMode === 'create'
                 ? 'Create a project'
@@ -677,11 +676,15 @@ function App() {
           </header>
 
           {boardError && projectFormMode === null ? (
-            <div className="board__alert board__alert--error">{boardError}</div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-xl bg-red-100 dark:bg-red-900/20 dark:border-red-400/50 dark:text-red-400">
+              {boardError}
+            </div>
           ) : null}
 
           {projectFormMode === null && !hasProject ? (
-            <div className="board__empty surface">Choose a project to view its tasks.</div>
+            <div className="p-10 text-center text-gray-500 border border-dashed rounded-2xl border-indigo-300 bg-gray-50 dark:bg-gray-800/20 dark:text-gray-400 dark:border-indigo-400/50">
+              Choose a project to view its tasks.
+            </div>
           ) : null}
 
           {projectFormMode === null && hasProject ? (

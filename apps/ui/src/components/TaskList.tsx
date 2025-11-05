@@ -180,40 +180,56 @@ export const TaskList = ({
   );
 
   return (
-    <div className="list-view">
+    <div className="flex flex-col flex-1 gap-6 overflow-y-auto">
       {statusOptions.map((statusOption) => {
         const statusTasks = tasksByStatus[statusOption.key] ?? [];
         const showLoading = isLoading && statusTasks.length === 0;
         const showError = Boolean(error) && statusTasks.length === 0;
-        const showEmpty = !isLoading && !error && statusTasks.length === 0 && activeCreateStatus !== statusOption.key;
+        const showEmpty =
+          !isLoading && !error && statusTasks.length === 0 && activeCreateStatus !== statusOption.key;
         const isDragTarget = Boolean(draggingTaskId) && dragOverStatus === statusOption.key;
 
         return (
           <section
-            className={`list-view__section surface${isDragTarget ? ' list-view__section--droppable' : ''}`}
+            className={`flex flex-col gap-4 p-4 bg-white border border-gray-200 rounded-2xl shadow-md dark:bg-gray-800 dark:border-gray-700 ${
+              isDragTarget
+                ? 'bg-indigo-100 border-indigo-300 shadow-inner dark:bg-indigo-900/20 dark:border-indigo-500/40'
+                : ''
+            }`}
             key={statusOption.key}
           >
-            <header className="list-view__section-header">
-              <div className="list-view__section-title">
-                <h2>{statusOption.label}</h2>
-                <span className="list-view__count">{statusTasks.length}</span>
+            <header className="flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-2.5">
+                <h2 className="text-base font-medium">{statusOption.label}</h2>
+                <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 text-sm font-semibold text-gray-900 bg-indigo-100 rounded-full dark:bg-indigo-900/40 dark:text-gray-50">
+                  {statusTasks.length}
+                </span>
               </div>
               {activeCreateStatus === statusOption.key ? null : (
                 <button
                   type="button"
-                  className="list-view__add btn"
+                  className="inline-flex items-center justify-start gap-2 px-4 py-2 text-sm font-medium text-gray-900 transition-colors bg-indigo-100 rounded-lg dark:bg-indigo-900/40 dark:text-gray-50 hover:bg-indigo-200/80 dark:hover:bg-indigo-900/60"
                   onClick={() => {
                     setActiveCreateStatus(statusOption.key);
                   }}
                   disabled={Boolean(creatingStatus)}
                 >
-                  <span aria-hidden="true">+</span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center justify-center w-5 h-5 font-semibold text-white bg-indigo-600 rounded-full dark:bg-indigo-500"
+                  >
+                    +
+                  </span>
                   Add Task
                 </button>
               )}
             </header>
             <div
-              className={`list-view__body${isDragTarget ? ' list-view__body--droppable' : ''}`}
+              className={`flex flex-col gap-3.5 ${
+                isDragTarget
+                  ? 'bg-indigo-100/80 dark:bg-indigo-900/30 rounded-xl'
+                  : ''
+              }`}
               onDragOver={(event) => handleSectionDragOver(event, statusOption.key)}
               onDragEnter={(event) => handleSectionDragOver(event, statusOption.key)}
               onDragLeave={(event) => handleSectionDragLeave(event, statusOption.key)}
@@ -231,16 +247,26 @@ export const TaskList = ({
                 />
               ) : null}
 
-              {showLoading ? <div className="list-view__placeholder">Loading…</div> : null}
-              {showError ? <div className="list-view__placeholder list-view__placeholder--error">{error}</div> : null}
+              {showLoading ? (
+                <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-300 rounded-xl dark:border-gray-600 dark:text-gray-400">
+                  Loading…
+                </div>
+              ) : null}
+              {showError ? (
+                <div className="px-4 py-3 text-sm text-center text-yellow-700 bg-yellow-100 border border-dashed border-yellow-400 rounded-xl dark:bg-yellow-900/20 dark:border-yellow-400/40 dark:text-yellow-400">
+                  {error}
+                </div>
+              ) : null}
               {showEmpty ? (
-                <div className="list-view__placeholder list-view__placeholder--muted">No tasks yet.</div>
+                <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-300 rounded-xl dark:border-gray-600 dark:text-gray-400">
+                  No tasks yet.
+                </div>
               ) : null}
 
               {statusTasks.map((task) => (
                 <article
-                  className={`task-card surface task-card--list${
-                    draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
+                  className={`relative flex flex-col gap-2.5 p-4 bg-white border border-gray-200 rounded-2xl shadow-md cursor-grab active:cursor-grabbing dark:bg-gray-800 dark:border-gray-700 group ${
+                    draggingTaskId === task.taskId ? 'opacity-60' : ''
                   }`}
                   key={task.taskId}
                   draggable
@@ -248,8 +274,8 @@ export const TaskList = ({
                   onDragEnd={handleDragEnd}
                   aria-grabbed={draggingTaskId === task.taskId}
                 >
-                  <header>
-                    <h3>{task.name}</h3>
+                  <header className="flex items-start justify-between gap-3">
+                    <h3 className="text-base font-medium">{task.name}</h3>
                     <button
                       type="button"
                       aria-label={`Edit ${task.name}`}
@@ -258,8 +284,9 @@ export const TaskList = ({
                         onEditTask(task.taskId);
                       }}
                       disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                      className="p-1 text-gray-500 transition-colors rounded-lg opacity-0 pointer-events-none dark:text-gray-400 group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700/60 dark:hover:text-gray-50"
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="w-5 h-5">
                         <path
                           fill="currentColor"
                           d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
@@ -268,15 +295,20 @@ export const TaskList = ({
                     </button>
                   </header>
                   {task.labels.length ? (
-                    <div className="task-card__labels">
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       {task.labels.map((label) => (
-                        <span key={`${task.taskId}-label-${label.toLowerCase()}`} className="task-card__label">
+                        <span
+                          key={`${task.taskId}-label-${label.toLowerCase()}`}
+                          className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full dark:bg-indigo-900/40 dark:text-indigo-300"
+                        >
                           {label}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  {task.description ? <p>{task.description}</p> : null}
+                  {task.description ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{task.description}</p>
+                  ) : null}
                 </article>
               ))}
             </div>

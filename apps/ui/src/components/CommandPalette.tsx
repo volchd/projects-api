@@ -122,16 +122,23 @@ export const CommandPalette = ({ open, commands, onClose, onSelect }: CommandPal
   }
 
   return (
-    <div className="command-palette__backdrop" role="presentation">
+    <div
+      className="fixed inset-0 z-50 flex justify-center p-6 bg-gray-900/40"
+      role="presentation"
+    >
       <div
-        className="command-palette"
+        className="flex flex-col w-full max-w-md overflow-hidden bg-gray-900 border border-gray-700 rounded-2xl shadow-xl text-gray-50"
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label="Command menu"
       >
-        <div className="command-palette__header">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="command-palette__icon">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="w-5 h-5 text-gray-400"
+          >
             <path
               fill="currentColor"
               d="m20.65 19.29-3.66-3.66a7 7 0 1 0-1.36 1.36l3.66 3.66a1 1 0 0 0 1.36-1.36ZM5 10a5 5 0 1 1 5 5 5 5 0 0 1-5-5Z"
@@ -139,39 +146,47 @@ export const CommandPalette = ({ open, commands, onClose, onSelect }: CommandPal
           </svg>
           <input
             ref={inputRef}
-            className="command-palette__input"
+            className="flex-1 text-base bg-transparent border-none focus:ring-0"
             type="text"
             placeholder="Search commands…"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button type="button" className="command-palette__close" onClick={onClose}>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center w-8 h-8 text-xl text-indigo-400 bg-gray-800 rounded-full hover:bg-gray-700"
+            onClick={onClose}
+          >
             <span className="sr-only">Close command menu</span>
-            ×
+            &times;
           </button>
         </div>
-        <div className="command-palette__body">
+        <div className="max-h-xs overflow-y-auto">
           {filteredCommands.length === 0 ? (
-            <div className="command-palette__empty">No commands found</div>
+            <div className="py-12 text-center text-gray-400">No commands found</div>
           ) : (
-            <ul className="command-palette__list" role="listbox">
+            <ul className="flex flex-col gap-1 p-2" role="listbox">
               {filteredCommands.map((command, index) => (
                 <li key={command.id}>
                   <button
                     type="button"
-                    className={`command-palette__item${
-                      index === activeIndex ? ' command-palette__item--active' : ''
-                    }${command.disabled ? ' command-palette__item--disabled' : ''}`}
+                    className={`flex flex-col w-full gap-1 p-3 text-left transition-colors rounded-lg ${
+                      index === activeIndex
+                        ? 'bg-indigo-900/60'
+                        : 'hover:bg-indigo-900/20'
+                    }${command.disabled ? ' opacity-40 cursor-not-allowed' : ''}`}
                     onClick={() => handleSelect(index)}
                     onMouseEnter={() => setActiveIndex(index)}
                     disabled={command.disabled}
                     role="option"
                     aria-selected={index === activeIndex}
                   >
-                    <span className="command-palette__item-label">{command.label}</span>
+                    <span className="text-base font-semibold">{command.label}</span>
                     {command.description ? (
-                      <span className="command-palette__item-description">{command.description}</span>
+                      <span className="text-sm text-gray-300">
+                        {command.description}
+                      </span>
                     ) : null}
                   </button>
                 </li>
@@ -179,7 +194,7 @@ export const CommandPalette = ({ open, commands, onClose, onSelect }: CommandPal
             </ul>
           )}
         </div>
-        <div className="command-palette__footer">
+        <div className="px-4 py-3 text-sm text-gray-400 border-t border-gray-700">
           <span>Navigate with ↑ ↓, press Enter to run.</span>
         </div>
       </div>

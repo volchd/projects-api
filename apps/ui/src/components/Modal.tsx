@@ -73,9 +73,14 @@ export const Modal = ({
   const resolvedDescriptionId = description ? `${descriptionId}-description` : undefined;
 
   return (
-    <div className="modal__backdrop" role="presentation">
+    <div
+      className="fixed inset-0 z-40 flex items-start justify-center p-6 bg-gray-900/40"
+      role="presentation"
+    >
       <div
-        className={size === 'wide' ? 'modal modal--wide' : 'modal'}
+        className={`flex flex-col gap-4 p-7 bg-white rounded-2xl shadow-xl dark:bg-gray-800 w-full ${
+          size === 'wide' ? 'max-w-3xl' : 'max-w-md'
+        }`}
         ref={containerRef}
         role="dialog"
         aria-modal="true"
@@ -84,16 +89,16 @@ export const Modal = ({
         tabIndex={-1}
       >
         {title ? (
-          <h2 id={resolvedTitleId} className="modal__title">
+          <h2 id={resolvedTitleId} className="text-xl font-bold">
             {title}
           </h2>
         ) : null}
         {description ? (
-          <p id={resolvedDescriptionId} className="modal__description">
+          <p id={resolvedDescriptionId} className="text-gray-600 dark:text-gray-300">
             {description}
           </p>
         ) : null}
-        <div className="modal__content">{children}</div>
+        <div className="flex flex-col gap-4">{children}</div>
       </div>
     </div>
   );
