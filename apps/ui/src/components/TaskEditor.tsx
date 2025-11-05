@@ -240,171 +240,189 @@ export const TaskEditor = ({
 
   const showStatusSelector = mode === 'edit' && statuses.length > 0;
 
+  const showSecondaryColumn = showStatusSelector || showPrioritySelector || showLabelSelector;
+  const hasPrimaryExtras = showDateFields || showDescriptionField;
+  const shouldRenderGrid = hasPrimaryExtras || showSecondaryColumn;
+
   return (
     <form className="task-editor" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        ref={nameInputRef}
-        value={values.name}
-        onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
-        placeholder="Task title"
-        disabled={isSubmitting || isDeleting}
-      />
-      {showDateFields ? (
-      <div className="task-editor__dates">
-        <label className="task-editor__date-field">
-          <span>Start date</span>
-          <input
-            type="date"
-            value={values.startDate}
-            max={values.dueDate || undefined}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, startDate: event.target.value }))
-            }
-            disabled={isSubmitting || isDeleting}
-          />
-        </label>
-        <label className="task-editor__date-field">
-          <span>Due date</span>
-          <input
-            type="date"
-            value={values.dueDate}
-            min={values.startDate || undefined}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, dueDate: event.target.value }))
-            }
-            disabled={isSubmitting || isDeleting}
-          />
-        </label>
-      </div>
-    ) : null}
-      {showDescriptionField ? (
-        <textarea
-          value={values.description}
-          onChange={(event) => setValues((prev) => ({ ...prev, description: event.target.value }))}
-          placeholder="Description (optional)"
-          disabled={isSubmitting || isDeleting}
-          rows={3}
-        />
-      ) : null}
-      {error ? (
-        <div className="task-editor__error" role="alert">
-          {error}
-        </div>
-      ) : null}
-      {showStatusSelector ? (
-        <label className="task-editor__status">
-          <span>Status</span>
-          <select
-            value={values.status}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, status: event.target.value as TaskStatus }))
-            }
-            disabled={isSubmitting || isDeleting}
-          >
-            {statuses.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      {showPrioritySelector ? (
-        <label className="task-editor__status">
-          <span>Priority</span>
-          <select
-            value={values.priority}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))
-            }
-            disabled={isSubmitting || isDeleting}
-          >
-            {priorityOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      {showLabelSelector ? (
-        <div className="task-editor__labels">
-          <span className="task-editor__labels-title">Labels</span>
-          {labelOptions.length ? (
-            <div className="task-editor__label-options">
-              {labelOptions.map((label) => {
-                const isActive = isLabelSelected(label);
-                return (
-                  <button
-                    type="button"
-                    key={label.toLowerCase()}
-                    className={`task-editor__label-option${
-                      isActive ? ' task-editor__label-option--active' : ''
-                    }`}
-                    onClick={() => handleToggleLabel(label)}
-                    disabled={isSubmitting || isDeleting}
-                    aria-pressed={isActive}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="task-editor__label-placeholder">No labels yet. Create one below.</p>
-          )}
-          <div className="task-editor__label-add">
-            <input
-              type="text"
-              value={labelInput}
-              onChange={(event) => {
-                setLabelInput(event.target.value);
-                if (labelError) {
-                  setLabelError(null);
-                }
-              }}
-              placeholder="New label"
-              disabled={isSubmitting || isDeleting}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  handleAddLabel();
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={handleAddLabel}
-              disabled={!canAddLabel}
-            >
-              Add
-            </button>
+      <div className="task-editor__content">
+        {error ? (
+          <div className="task-editor__error" role="alert">
+            {error}
           </div>
-          {values.labels.length ? (
-            <div className="task-editor__selected-labels">
-              {values.labels.map((label) => (
-                <span key={label.toLowerCase()} className="task-editor__selected-label">
-                  {label}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleLabel(label)}
-                    disabled={isSubmitting || isDeleting}
-                    aria-label={`Remove ${label}`}
-                  >
-                    x
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : null}
-          {labelError ? (
-            <div className="task-editor__label-error" role="alert">
-              {labelError}
-            </div>
-          ) : null}
+        ) : null}
+        <div className="task-editor__name">
+          <input
+            type="text"
+            ref={nameInputRef}
+            value={values.name}
+            onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
+            placeholder="Task title"
+            disabled={isSubmitting || isDeleting}
+          />
         </div>
-      ) : null}
+        {shouldRenderGrid ? (
+          <div className="task-editor__grid">
+            {hasPrimaryExtras ? (
+              <div className="task-editor__column task-editor__column--primary">
+                {showDateFields ? (
+                  <div className="task-editor__dates">
+                    <label className="task-editor__date-field">
+                      <span>Start date</span>
+                      <input
+                        type="date"
+                        value={values.startDate}
+                        max={values.dueDate || undefined}
+                        onChange={(event) =>
+                          setValues((prev) => ({ ...prev, startDate: event.target.value }))
+                        }
+                        disabled={isSubmitting || isDeleting}
+                      />
+                    </label>
+                    <label className="task-editor__date-field">
+                      <span>Due date</span>
+                      <input
+                        type="date"
+                        value={values.dueDate}
+                        min={values.startDate || undefined}
+                        onChange={(event) =>
+                          setValues((prev) => ({ ...prev, dueDate: event.target.value }))
+                        }
+                        disabled={isSubmitting || isDeleting}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                {showDescriptionField ? (
+                  <textarea
+                    value={values.description}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, description: event.target.value }))
+                    }
+                    placeholder="Description (optional)"
+                    disabled={isSubmitting || isDeleting}
+                    rows={3}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            {showSecondaryColumn ? (
+              <div className="task-editor__column task-editor__column--secondary">
+                {showStatusSelector ? (
+                  <label className="task-editor__status">
+                    <span>Status</span>
+                    <select
+                      value={values.status}
+                      onChange={(event) =>
+                        setValues((prev) => ({ ...prev, status: event.target.value as TaskStatus }))
+                      }
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      {statuses.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {showPrioritySelector ? (
+                  <label className="task-editor__status">
+                    <span>Priority</span>
+                    <select
+                      value={values.priority}
+                      onChange={(event) =>
+                        setValues((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))
+                      }
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      {priorityOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {showLabelSelector ? (
+                  <div className="task-editor__labels">
+                    <span className="task-editor__labels-title">Labels</span>
+                    {labelOptions.length ? (
+                      <div className="task-editor__label-options">
+                        {labelOptions.map((label) => {
+                          const isActive = isLabelSelected(label);
+                          return (
+                            <button
+                              type="button"
+                              key={label.toLowerCase()}
+                              className={`task-editor__label-option${
+                                isActive ? ' task-editor__label-option--active' : ''
+                              }`}
+                              onClick={() => handleToggleLabel(label)}
+                              disabled={isSubmitting || isDeleting}
+                              aria-pressed={isActive}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="task-editor__label-placeholder">No labels yet. Create one below.</p>
+                    )}
+                    <div className="task-editor__label-add">
+                      <input
+                        type="text"
+                        value={labelInput}
+                        onChange={(event) => {
+                          setLabelInput(event.target.value);
+                          if (labelError) {
+                            setLabelError(null);
+                          }
+                        }}
+                        placeholder="New label"
+                        disabled={isSubmitting || isDeleting}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleAddLabel();
+                          }
+                        }}
+                      />
+                      <button type="button" onClick={handleAddLabel} disabled={!canAddLabel}>
+                        Add
+                      </button>
+                    </div>
+                    {values.labels.length ? (
+                      <div className="task-editor__selected-labels">
+                        {values.labels.map((label) => (
+                          <span key={label.toLowerCase()} className="task-editor__selected-label">
+                            {label}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleLabel(label)}
+                              disabled={isSubmitting || isDeleting}
+                              aria-label={`Remove ${label}`}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {labelError ? (
+                      <div className="task-editor__label-error" role="alert">
+                        {labelError}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
       <div className="task-editor__actions">
         {mode === 'edit' && onDelete ? (
           <button

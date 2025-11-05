@@ -823,6 +823,7 @@ function App() {
           taskEditModalSubmitting ||
           (taskBeingEdited ? deletingTaskId === taskBeingEdited.taskId : false)
         }
+        size="wide"
       >
         {taskBeingEdited ? (
           <TaskEditor

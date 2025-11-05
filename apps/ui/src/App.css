@@ -1300,7 +1300,57 @@ select:focus-visible {
   padding: 18px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  max-height: 75vh;
+  overflow: hidden;
+}
+
+.task-editor__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+}
+
+.task-editor__name {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-editor__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .task-editor__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+.task-editor__column {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.task-editor__dates {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.task-editor__date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .task-editor input,
@@ -1686,6 +1736,10 @@ select:focus-visible {
   flex-direction: column;
   gap: 18px;
   outline: none;
+}
+
+.modal--wide {
+  width: min(1040px, 100%);
 }
 
 .modal__title {

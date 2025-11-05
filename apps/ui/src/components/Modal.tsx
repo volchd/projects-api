@@ -9,6 +9,7 @@ type ModalProps = {
   children: ReactNode;
   onClose: () => void;
   isDismissDisabled?: boolean;
+  size?: 'default' | 'wide';
 };
 
 export const Modal = ({
@@ -18,6 +19,7 @@ export const Modal = ({
   children,
   onClose,
   isDismissDisabled = false,
+  size = 'default',
 }: ModalProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
@@ -73,7 +75,7 @@ export const Modal = ({
   return (
     <div className="modal__backdrop" role="presentation">
       <div
-        className="modal"
+        className={size === 'wide' ? 'modal modal--wide' : 'modal'}
         ref={containerRef}
         role="dialog"
         aria-modal="true"
