@@ -42,7 +42,7 @@ vi.hoisted(() => {
 });
 
 const tableName = process.env.TABLE_NAME as string;
-let dynamoAvailable = true;
+let tableCreated = false;
 
 const baseEvent = (
   overrides: Partial<APIGatewayProxyEventV2> = {},
@@ -143,16 +143,11 @@ describe('tasks integration', () => {
     try {
       await dynamoClient.send(new ListTablesCommand({ Limit: 1 }));
     } catch (error) {
-      dynamoAvailable = false;
-      console.warn(
-        `Skipping tasks integration tests: unable to reach DynamoDB Local at ${process.env.DYNAMODB_ENDPOINT}.`,
+      console.error(
+        `Integration tests require DynamoDB Local at ${process.env.DYNAMODB_ENDPOINT}. Ensure the local instance is running.`,
       );
-      console.warn(error);
-      return;
-    }
-
-    if (!dynamoAvailable) {
-      return;
+      console.error(error);
+      throw new Error('DynamoDB Local is not reachable; aborting integration tests.');
     }
 
     await dynamoClient.send(
@@ -182,6 +177,8 @@ describe('tasks integration', () => {
       }),
     );
 
+    tableCreated = true;
+
     await waitUntilTableExists(
       { client: dynamoClient, maxWaitTime: 20, minDelay: 1 },
       { TableName: tableName },
@@ -189,22 +186,17 @@ describe('tasks integration', () => {
   });
 
   afterAll(async () => {
-    if (!dynamoAvailable) {
-      return;
+    if (tableCreated) {
+      await dynamoClient.send(
+        new DeleteTableCommand({
+          TableName: tableName,
+        }),
+      );
     }
-
-    await dynamoClient.send(
-      new DeleteTableCommand({
-        TableName: tableName,
-      }),
-    );
+    dynamoClient.destroy();
   });
 
   beforeEach(async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, project: created } = await createProject();
     expect(statusCode).toBe(201);
     expect(created.userId).toBe(hardcodedUserId);
@@ -214,12 +206,6 @@ describe('tasks integration', () => {
   });
 
   afterEach(async () => {
-    if (!dynamoAvailable) {
-      project = undefined;
-      createdTaskIds.length = 0;
-      return;
-    }
-
     if (project) {
       for (const taskId of createdTaskIds.splice(0)) {
         const response = await removeTaskHandler(
@@ -249,13 +235,10 @@ describe('tasks integration', () => {
     }
 
     project = undefined;
+    createdTaskIds.length = 0;
   });
 
   it('creates a task for a project', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id);
 
     expect(statusCode).toBe(201);
@@ -274,10 +257,6 @@ describe('tasks integration', () => {
   });
 
   it('creates a task with a custom status', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const updateResponse = await updateProjectHandler(
       baseEvent({
         pathParameters: { id: project!.id },
@@ -301,10 +280,6 @@ describe('tasks integration', () => {
   });
 
   it('creates a task with optional start and due dates', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const startDate = '2030-01-05';
     const dueDate = '2030-01-10';
     const { statusCode, task } = await createTask(project!.id, {
@@ -322,10 +297,6 @@ describe('tasks integration', () => {
   });
 
   it('creates a task with a custom priority', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id, {
       name: 'Prioritized task',
       priority: 'Urgent',
@@ -338,10 +309,6 @@ describe('tasks integration', () => {
   });
 
   it('creates a task with labels and updates project labels', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id, {
       name: 'Document feature',
       labels: ['Docs', 'Support'],
@@ -364,10 +331,6 @@ describe('tasks integration', () => {
   });
 
   it('rejects creating a task when due date is before the start date', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const response = await createTaskHandler(
       baseEvent({
         pathParameters: { projectId: project!.id },
@@ -386,10 +349,6 @@ describe('tasks integration', () => {
   });
 
   it('retrieves a task by id', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id);
     expect(statusCode).toBe(201);
     createdTaskIds.push(task.taskId);
@@ -405,10 +364,6 @@ describe('tasks integration', () => {
   });
 
   it('lists tasks for a project', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const firstTask = await createTask(project!.id, {
       name: 'First task',
       description: 'First',
@@ -460,10 +415,6 @@ describe('tasks integration', () => {
   });
 
   it('updates a task', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id);
     expect(statusCode).toBe(201);
     createdTaskIds.push(task.taskId);
@@ -499,10 +450,6 @@ describe('tasks integration', () => {
   });
 
   it('updates task labels and syncs project labels', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const initial = await createTask(project!.id, {
       name: 'Labelled task',
       labels: ['Docs'],
@@ -533,10 +480,6 @@ describe('tasks integration', () => {
   });
 
   it('rejects updating a task when due date is before the start date', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id);
     expect(statusCode).toBe(201);
     createdTaskIds.push(task.taskId);
@@ -558,10 +501,6 @@ describe('tasks integration', () => {
   });
 
   it('rejects an update to a status outside of the project set', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const updateResponse = await updateProjectHandler(
       baseEvent({
         pathParameters: { id: project!.id },
@@ -592,10 +531,6 @@ describe('tasks integration', () => {
   });
 
   it('removes a task', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, task } = await createTask(project!.id);
     expect(statusCode).toBe(201);
     createdTaskIds.push(task.taskId);
@@ -623,10 +558,6 @@ describe('tasks integration', () => {
   });
 
   it('removes all project tasks when deleting the project', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const firstTask = await createTask(project!.id, { name: 'First cascading task' });
     expect(firstTask.statusCode).toBe(201);
     createdTaskIds.push(firstTask.task.taskId);

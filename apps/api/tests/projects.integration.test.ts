@@ -34,7 +34,7 @@ vi.hoisted(() => {
 });
 
 const tableName = process.env.TABLE_NAME as string;
-let dynamoAvailable = true;
+let tableCreated = false;
 
 const baseEvent = (
   overrides: Partial<APIGatewayProxyEventV2> = {},
@@ -111,16 +111,11 @@ describe('projects integration', () => {
     try {
       await dynamoClient.send(new ListTablesCommand({ Limit: 1 }));
     } catch (error) {
-      dynamoAvailable = false;
-      console.warn(
-        `Skipping integration tests: unable to reach DynamoDB Local at ${process.env.DYNAMODB_ENDPOINT}.`,
+      console.error(
+        `Integration tests require DynamoDB Local at ${process.env.DYNAMODB_ENDPOINT}. Ensure the local instance is running.`,
       );
-      console.warn(error);
-      return;
-    }
-
-    if (!dynamoAvailable) {
-      return;
+      console.error(error);
+      throw new Error('DynamoDB Local is not reachable; aborting integration tests.');
     }
 
     await dynamoClient.send(
@@ -150,6 +145,8 @@ describe('projects integration', () => {
       }),
     );
 
+    tableCreated = true;
+
     await waitUntilTableExists(
       { client: dynamoClient, maxWaitTime: 30 },
       { TableName: tableName },
@@ -157,22 +154,14 @@ describe('projects integration', () => {
   });
 
   afterAll(async () => {
-    if (!dynamoAvailable) {
-      dynamoClient.destroy();
-      ddbDocClient.destroy?.();
-      return;
+    if (tableCreated) {
+      await dynamoClient.send(new DeleteTableCommand({ TableName: tableName }));
     }
-
-    await dynamoClient.send(new DeleteTableCommand({ TableName: tableName }));
     dynamoClient.destroy();
     ddbDocClient.destroy?.();
   });
 
   it('creates a project with DynamoDB Local', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, project } = await createProject();
 
     expect(statusCode).toBe(201);
@@ -194,10 +183,6 @@ describe('projects integration', () => {
   });
 
   it('creates a project with custom statuses', async () => {
-    if (!dynamoAvailable) {
-      return;
-    }
-
     const { statusCode, project } = await createProject({
       statuses: [' backlog ', 'In QA', 'done'],
     });
@@ -216,10 +201,6 @@ describe('projects integration', () => {
     let project: ProjectRecord | undefined;
 
     beforeEach(async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const { statusCode, project: created } = await createProject({
         name: 'Existing Project',
       });
@@ -230,11 +211,6 @@ describe('projects integration', () => {
     });
 
     afterEach(async () => {
-      if (!dynamoAvailable) {
-        project = undefined;
-        return;
-      }
-
       if (!project) {
         return;
       }
@@ -255,10 +231,6 @@ describe('projects integration', () => {
     });
 
     it('retrieves a project by id', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const getResponse = await get(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -277,10 +249,6 @@ describe('projects integration', () => {
     });
 
     it('lists projects by user', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const listResponse = await listByUser(
         baseEvent(),
       );
@@ -305,10 +273,6 @@ describe('projects integration', () => {
     });
 
     it('updates project fields', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const updateResponse = await update(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -330,10 +294,6 @@ describe('projects integration', () => {
     });
 
     it('updates project statuses', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const updateResponse = await update(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -361,10 +321,6 @@ describe('projects integration', () => {
     });
 
     it('updates project labels', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const updateResponse = await update(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -390,10 +346,6 @@ describe('projects integration', () => {
     });
 
     it('rejects invalid project statuses', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const duplicateResponse = await update(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -420,10 +372,6 @@ describe('projects integration', () => {
     });
 
     it('rejects invalid project labels', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const nonArrayResponse = await update(
         baseEvent({
           pathParameters: { id: project!.id },
@@ -448,10 +396,6 @@ describe('projects integration', () => {
     });
 
     it('deletes a project', async () => {
-      if (!dynamoAvailable) {
-        return;
-      }
-
       const projectId = project!.id;
       const createdTaskResponse = await createTask(
         baseEvent({
