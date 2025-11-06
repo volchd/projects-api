@@ -37,10 +37,10 @@ export function ProjectList({ selectedProjectId, onSelectProject }: ProjectListP
     }
   };
 
-  const handleUpdateProject = async (newName: string) => {
-    if (editingProject && newName.trim()) {
+  const handleUpdateProject = async (payload: { name: string; description: string | null }) => {
+    if (editingProject && payload.name.trim()) {
       try {
-        await updateProject(editingProject.id, { name: newName.trim(), description: null });
+        await updateProject(editingProject.id, payload);
         setEditingProject(null);
       } catch (err) {
         // Error is already handled by the hook
