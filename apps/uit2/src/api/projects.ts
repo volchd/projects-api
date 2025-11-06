@@ -65,3 +65,17 @@ export const updateProjectStatuses = async (projectId: string, statuses: string[
 
   return (await response.json()) as Project;
 };
+
+export const updateProjectLabels = async (projectId: string, labels: string[]) => {
+  const response = await fetch(apiUrl(`/projects/${projectId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ labels }),
+  });
+
+  if (!response.ok) {
+    await parseError(response, 'Failed to update project labels');
+  }
+
+  return (await response.json()) as Project;
+};

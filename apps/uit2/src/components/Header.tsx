@@ -1,15 +1,15 @@
 export function Header() {
   return (
-    <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white p-4">
+    <header className="flex flex-shrink-0 items-center justify-between border-b border-stone-200 bg-white p-4">
       <div className="flex items-center">
         <div className="relative">
           <input
             type="text"
             placeholder="Search tasks..."
-            className="w-96 rounded-lg border-slate-300 py-2 pl-10 pr-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="w-96 rounded-lg border-stone-300 py-2 pl-10 pr-4 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
           />
           <svg
-            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -26,31 +26,31 @@ export function Header() {
         <nav className="ml-8 space-x-2">
           <a
             href="#"
-            className="rounded-md border-b-2 border-indigo-500 px-3 py-2 text-sm font-medium text-indigo-600"
+            className="rounded-md border-b-2 border-emerald-500 px-3 py-2 text-sm font-medium text-emerald-600"
           >
             Board
           </a>
           <a
             href="#"
-            className="rounded-md px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            className="rounded-md px-3 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100"
           >
             List
           </a>
           <a
             href="#"
-            className="rounded-md px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            className="rounded-md px-3 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100"
           >
             Comments
           </a>
         </nav>
       </div>
       <div className="flex items-center space-x-4">
-        <button className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200">
-          Command <span className="ml-2 text-slate-400">⌘K</span>
+        <button className="rounded-lg bg-stone-100 px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200">
+          Command <span className="ml-2 text-stone-400">⌘K</span>
         </button>
-        <button className="rounded-full p-2 hover:bg-slate-100">
+        <button className="rounded-full p-2 hover:bg-stone-100">
           <svg
-            className="h-6 w-6 text-slate-500"
+            className="h-6 w-6 text-stone-500"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -64,11 +64,11 @@ export function Header() {
             />
           </svg>
         </button>
-        <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
           Invite
         </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
-          <span className="font-semibold text-indigo-700">AC</span>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+          <span className="font-semibold text-emerald-700">AC</span>
         </div>
       </div>
     </header>

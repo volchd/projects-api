@@ -10,7 +10,7 @@ interface TaskBoardProps {
 }
 
 export function TaskBoard({ projectId }: TaskBoardProps) {
-  const { projects, updateProject } = useProjects();
+  const { projects, updateProjectLabels, updateProjectStatuses } = useProjects();
   const selectedProject = useMemo(() => projects.find((p) => p.id === projectId), [
     projects,
     projectId,
@@ -37,7 +37,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
     if (newColumnName.trim() && selectedProject) {
       const newStatuses = [...selectedProject.statuses, newColumnName.trim()];
       try {
-        await updateProject(selectedProject.id, { ...selectedProject, statuses: newStatuses });
+        await updateProjectStatuses(selectedProject.id, newStatuses);
         setNewColumnName('');
         setIsCreatingColumn(false);
       } catch (err) {
@@ -65,10 +65,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
         await updateTask(editingTask.taskId, taskData);
         if (newLabels.length > 0 && selectedProject) {
           const updatedLabels = [...(selectedProject.labels || []), ...newLabels];
-          await updateProject(selectedProject.id, {
-            ...selectedProject,
-            labels: updatedLabels,
-          });
+          await updateProjectLabels(selectedProject.id, updatedLabels);
         }
         setEditingTask(null);
       } catch (err) {
@@ -85,10 +82,10 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
-    <div className="flex h-full space-x-4 overflow-x-auto">
+    <div className="flex h-full space-x-6 overflow-x-auto">
       {columns.map((column) => (
-        <div key={column.name} className="w-80 flex-shrink-0 rounded-xl bg-slate-100 p-4">
-          <h3 className="text-lg font-semibold text-slate-700">{column.name}</h3>
+        <div key={column.name} className="w-80 flex-shrink-0 rounded-xl bg-stone-100 p-4">
+          <h3 className="text-lg font-semibold text-stone-700">{column.name}</h3>
           <ul className="mt-4 space-y-3">
             {column.tasks.map((task) => (
               <li key={task.taskId} className="group relative rounded-lg bg-white p-3 shadow-sm">
@@ -99,7 +96,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
                   title="Edit task"
                 >
                   <svg
-                    className="h-5 w-5 text-gray-500"
+                    className="h-5 w-5 text-stone-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -125,18 +122,18 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
               value={newTaskForms[column.name] || ''}
               onChange={(e) => handleNewTaskNameChange(column.name, e.target.value)}
               placeholder="New task name"
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="w-full rounded-md border-stone-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
             />
             <button
               type="submit"
-              className="mt-2 w-full rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="mt-2 w-full rounded-md bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
               Create Task
             </button>
           </form>
         </div>
       ))}
-      <div className="w-80 flex-shrink-0 rounded-xl bg-slate-100 p-4">
+      <div className="w-80 flex-shrink-0 rounded-xl bg-stone-100 p-4">
         {isCreatingColumn ? (
           <form onSubmit={handleCreateColumn} className="flex gap-2">
             <input
@@ -144,11 +141,11 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
               value={newColumnName}
               onChange={(e) => setNewColumnName(e.target.value)}
               placeholder="New column name"
-              className="min-w-0 flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="min-w-0 flex-1 rounded-md border-stone-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
             />
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="rounded-md bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
             >
               Create
             </button>
@@ -156,7 +153,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
         ) : (
           <button
             onClick={() => setIsCreatingColumn(true)}
-            className="flex w-full items-center justify-center rounded-lg bg-slate-200/80 p-2 text-slate-600 hover:bg-slate-200"
+            className="flex w-full items-center justify-center rounded-lg bg-stone-200/80 p-2 text-stone-600 hover:bg-stone-200"
           >
             <svg
               className="h-6 w-6"

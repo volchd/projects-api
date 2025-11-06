@@ -8,7 +8,7 @@ function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-stone-50">
       <div className="w-64 flex-shrink-0 overflow-y-auto bg-white shadow-md">
         <ProjectList
           selectedProjectId={selectedProjectId}
@@ -21,7 +21,7 @@ function App() {
           {selectedProjectId ? (
             <TaskBoard key={selectedProjectId} projectId={selectedProjectId} />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-md bg-white text-gray-500">
+            <div className="flex h-full items-center justify-center rounded-lg bg-white text-stone-500">
               Select a project to see its tasks
             </div>
           )}

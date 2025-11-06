@@ -51,14 +51,14 @@ export function ProjectList({ selectedProjectId, onSelectProject }: ProjectListP
   return (
     <div className="p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">Projects</h1>
+        <h1 className="text-2xl font-bold text-stone-800">Projects</h1>
         <button
           onClick={() => setCreateModalOpen(true)}
-          className="rounded-full p-2 hover:bg-slate-200"
+          className="rounded-full p-2 hover:bg-stone-200"
           title="Create new project"
         >
           <svg
-            className="h-6 w-6 text-slate-500"
+            className="h-6 w-6 text-stone-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -81,19 +81,19 @@ export function ProjectList({ selectedProjectId, onSelectProject }: ProjectListP
               onClick={() => onSelectProject(project.id)}
               className={`w-full rounded-lg p-2 text-left font-medium ${
                 selectedProjectId === project.id
-                  ? 'bg-indigo-100 text-indigo-800'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'text-stone-600 hover:bg-stone-100'
               }`}
             >
               {project.name}
             </button>
             <button
               onClick={() => setEditingProject(project)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 opacity-0 group-hover:opacity-100 hover:bg-slate-200"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 opacity-0 group-hover:opacity-100 hover:bg-stone-200"
               title="Edit project"
             >
               <svg
-                className="h-5 w-5 text-slate-500"
+                className="h-5 w-5 text-stone-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -121,11 +121,11 @@ export function ProjectList({ selectedProjectId, onSelectProject }: ProjectListP
             value={newProjectName}
             onChange={(e) => setNewProjectName(e.target.value)}
             placeholder="New project name"
-            className="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="w-full rounded-md border-stone-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
           />
           <button
             type="submit"
-            className="mt-4 w-full rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="mt-4 w-full rounded-md bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             Create
           </button>
