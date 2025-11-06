@@ -17,6 +17,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
     selectedProject?.statuses ?? [],
   );
   const [newColumnName, setNewColumnName] = useState('');
+  const [isCreatingColumn, setIsCreatingColumn] = useState(false);
   const [newTaskForms, setNewTaskForms] = useState<Record<string, string>>({});
 
   const columns = useMemo(() => {
@@ -34,6 +35,7 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
       try {
         await updateProjectStatuses(selectedProject.id, newStatuses);
         setNewColumnName('');
+        setIsCreatingColumn(false);
       } catch (err) {
         // Error is handled by the hook
       }
@@ -61,53 +63,76 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
   if (error) return <div className="text-red-500">{error}</div>;
 
   return (
-    <div>
-      <form onSubmit={handleCreateColumn} className="mb-4 flex">
-        <input
-          type="text"
-          value={newColumnName}
-          onChange={(e) => setNewColumnName(e.target.value)}
-          placeholder="New column name"
-          className="flex-1 rounded-md border border-gray-300 p-2"
-        />
-        <button
-          type="submit"
-          className="ml-2 rounded-md bg-blue-500 p-2 text-white"
-        >
-          Create Column
-        </button>
-      </form>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {columns.map((column) => (
-          <div key={column.name} className="rounded-md bg-gray-200 p-4">
-            <h3 className="text-lg font-bold">{column.name}</h3>
-            <ul className="mt-4 space-y-2">
-              {column.tasks.map((task) => (
-                <li key={task.taskId} className="rounded-md bg-white p-2 shadow-sm">
-                  {task.name}
-                </li>
-              ))}
-            </ul>
-            <form
-              onSubmit={(e) => handleCreateTask(e, column.name)}
-              className="mt-4"
+    <div className="flex h-full space-x-4 overflow-x-auto">
+      {columns.map((column) => (
+        <div key={column.name} className="w-80 flex-shrink-0 rounded-md bg-gray-200 p-4">
+          <h3 className="text-lg font-bold">{column.name}</h3>
+          <ul className="mt-4 space-y-2">
+            {column.tasks.map((task) => (
+              <li key={task.taskId} className="rounded-md bg-white p-2 shadow-sm">
+                {task.name}
+              </li>
+            ))}
+          </ul>
+          <form
+            onSubmit={(e) => handleCreateTask(e, column.name)}
+            className="mt-4"
+          >
+            <input
+              type="text"
+              value={newTaskForms[column.name] || ''}
+              onChange={(e) => handleNewTaskNameChange(column.name, e.target.value)}
+              placeholder="New task name"
+              className="w-full rounded-md border border-gray-300 p-2"
+            />
+            <button
+              type="submit"
+              className="mt-2 w-full rounded-md bg-green-500 p-2 text-white"
             >
-              <input
-                type="text"
-                value={newTaskForms[column.name] || ''}
-                onChange={(e) => handleNewTaskNameChange(column.name, e.target.value)}
-                placeholder="New task name"
-                className="w-full rounded-md border border-gray-300 p-2"
+              Create Task
+            </button>
+          </form>
+        </div>
+      ))}
+      <div className="w-80 flex-shrink-0 rounded-md bg-gray-200 p-4">
+        {isCreatingColumn ? (
+          <form onSubmit={handleCreateColumn} className="flex">
+            <input
+              type="text"
+              value={newColumnName}
+              onChange={(e) => setNewColumnName(e.target.value)}
+              placeholder="New column name"
+              className="flex-1 rounded-md border border-gray-300 p-2"
+            />
+            <button
+              type="submit"
+              className="ml-2 rounded-md bg-blue-500 p-2 text-white"
+            >
+              Create Column
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setIsCreatingColumn(true)}
+            className="flex w-full items-center justify-center rounded-md bg-gray-300 p-2 text-gray-600 hover:bg-gray-400"
+          >
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
               />
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-md bg-green-500 p-2 text-white"
-              >
-                Create Task
-              </button>
-            </form>
-          </div>
-        ))}
+            </svg>
+            <span className="ml-2">Add another column</span>
+          </button>
+        )}
       </div>
     </div>
   );
