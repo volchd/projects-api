@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
+import { TASK_PRIORITY_VALUES } from '../constants/taskPriorityOptions';
 import type { Project, Task, TaskPriority, TaskStatus } from '../types';
-
-const PRIORITIES: TaskPriority[] = ['None', 'Low', 'Medium', 'High'];
 
 interface TaskEditFormProps {
   task: Task;
@@ -135,7 +134,7 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
               className="mt-1 w-full rounded-md border border-gray-300 p-2"
             >
-              {PRIORITIES.map((p) => (
+              {TASK_PRIORITY_VALUES.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
@@ -167,7 +166,7 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   placeholder="New label name"
-                  className="flex-1 rounded-md border border-gray-300 p-2"
+                  className="min-w-0 flex-1 rounded-md border border-gray-300 p-2"
                 />
                 <button
                   type="button"
