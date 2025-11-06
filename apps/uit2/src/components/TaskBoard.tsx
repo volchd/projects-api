@@ -87,11 +87,11 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
   return (
     <div className="flex h-full space-x-4 overflow-x-auto">
       {columns.map((column) => (
-        <div key={column.name} className="w-80 flex-shrink-0 rounded-md bg-gray-200 p-4">
-          <h3 className="text-lg font-bold">{column.name}</h3>
-          <ul className="mt-4 space-y-2">
+        <div key={column.name} className="w-80 flex-shrink-0 rounded-xl bg-slate-100 p-4">
+          <h3 className="text-lg font-semibold text-slate-700">{column.name}</h3>
+          <ul className="mt-4 space-y-3">
             {column.tasks.map((task) => (
-              <li key={task.taskId} className="group relative rounded-md bg-white p-2 shadow-sm">
+              <li key={task.taskId} className="group relative rounded-lg bg-white p-3 shadow-sm">
                 <span>{task.name}</span>
                 <button
                   onClick={() => setEditingTask(task)}
@@ -125,38 +125,38 @@ export function TaskBoard({ projectId }: TaskBoardProps) {
               value={newTaskForms[column.name] || ''}
               onChange={(e) => handleNewTaskNameChange(column.name, e.target.value)}
               placeholder="New task name"
-              className="w-full rounded-md border border-gray-300 p-2"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <button
               type="submit"
-              className="mt-2 w-full rounded-md bg-green-500 p-2 text-white"
+              className="mt-2 w-full rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               Create Task
             </button>
           </form>
         </div>
       ))}
-      <div className="w-80 flex-shrink-0 rounded-md bg-gray-200 p-4">
+      <div className="w-80 flex-shrink-0 rounded-xl bg-slate-100 p-4">
         {isCreatingColumn ? (
-          <form onSubmit={handleCreateColumn} className="flex">
+          <form onSubmit={handleCreateColumn} className="flex gap-2">
             <input
               type="text"
               value={newColumnName}
               onChange={(e) => setNewColumnName(e.target.value)}
               placeholder="New column name"
-              className="flex-1 rounded-md border border-gray-300 p-2"
+              className="min-w-0 flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <button
               type="submit"
-              className="ml-2 rounded-md bg-blue-500 p-2 text-white"
+              className="rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              Create Column
+              Create
             </button>
           </form>
         ) : (
           <button
             onClick={() => setIsCreatingColumn(true)}
-            className="flex w-full items-center justify-center rounded-md bg-gray-300 p-2 text-gray-600 hover:bg-gray-400"
+            className="flex w-full items-center justify-center rounded-lg bg-slate-200/80 p-2 text-slate-600 hover:bg-slate-200"
           >
             <svg
               className="h-6 w-6"

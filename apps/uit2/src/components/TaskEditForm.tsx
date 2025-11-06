@@ -76,13 +76,13 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Task name"
-          className="w-full rounded-md border border-gray-300 p-2 text-lg font-semibold"
+          className="w-full rounded-md border-slate-300 p-2 text-lg font-semibold shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         />
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Task description (optional)"
-          className="w-full rounded-md border border-gray-300 p-2"
+          className="w-full rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           rows={4}
         />
       </div>
@@ -92,29 +92,29 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
         {/* Column 1 */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <label className="block text-sm font-medium text-slate-700">Start Date</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 p-2"
+              className="mt-1 w-full rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Due Date</label>
+            <label className="block text-sm font-medium text-slate-700">Due Date</label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 p-2"
+              className="mt-1 w-full rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Status</label>
+            <label className="block text-sm font-medium text-slate-700">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 p-2"
+              className="mt-1 w-full rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               {project.statuses.map((s) => (
                 <option key={s} value={s}>
@@ -128,11 +128,11 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
         {/* Column 2 */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Priority</label>
+            <label className="block text-sm font-medium text-slate-700">Priority</label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
-              className="mt-1 w-full rounded-md border border-gray-300 p-2"
+              className="mt-1 w-full rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             >
               {TASK_PRIORITY_VALUES.map((p) => (
                 <option key={p} value={p}>
@@ -142,7 +142,7 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Labels</label>
+            <label className="block text-sm font-medium text-slate-700">Labels</label>
             <div className="mt-1 space-y-2">
               <div className="flex flex-wrap gap-2">
                 {availableLabels.map((label) => (
@@ -150,10 +150,10 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
                     type="button"
                     key={label}
                     onClick={() => handleLabelToggle(label)}
-                    className={`rounded-full px-3 py-1 text-sm ${
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${
                       selectedLabels.includes(label)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        ? 'bg-indigo-100 text-indigo-800'
+                        : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     {label}
@@ -166,12 +166,12 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   placeholder="New label name"
-                  className="min-w-0 flex-1 rounded-md border border-gray-300 p-2"
+                  className="min-w-0 flex-1 rounded-md border-slate-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
                 <button
                   type="button"
                   onClick={handleAddNewLabel}
-                  className="rounded-md bg-green-500 px-4 py-2 text-white"
+                  className="rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   Add
                 </button>
@@ -186,13 +186,13 @@ export function TaskEditForm({ task, project, onSubmit, onCancel }: TaskEditForm
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
+          className="rounded-md bg-slate-200 px-4 py-2 text-slate-700 hover:bg-slate-300"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          className="rounded-md bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           Save Task
         </button>
