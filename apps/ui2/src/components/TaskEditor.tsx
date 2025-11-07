@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import type { TaskLabel, TaskPriority, TaskStatus } from '../types';
 import { TASK_PRIORITY_VALUES, toPriorityOptions } from '../constants/taskPriorityOptions';
 import { Select } from './Select';
+import { DatePicker } from './DatePicker';
 
 const EMPTY_DESCRIPTION = '';
 const DEFAULT_PRIORITY: TaskPriority = 'None';
@@ -275,24 +276,22 @@ export const TaskEditor = ({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-2 text-sm text-slate-600 dark:text-white/70">
                     <span>Start date</span>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={values.startDate}
-                      max={values.dueDate || undefined}
-                      onChange={(event) => setValues((prev) => ({ ...prev, startDate: event.target.value }))}
+                      onChange={(newValue) => setValues((prev) => ({ ...prev, startDate: newValue }))}
                       disabled={isSubmitting || isDeleting}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-white/40"
+                      placeholder="mm/dd/yyyy"
+                      ariaLabel="Select start date"
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm text-slate-600 dark:text-white/70">
                     <span>Due date</span>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={values.dueDate}
-                      min={values.startDate || undefined}
-                      onChange={(event) => setValues((prev) => ({ ...prev, dueDate: event.target.value }))}
+                      onChange={(newValue) => setValues((prev) => ({ ...prev, dueDate: newValue }))}
                       disabled={isSubmitting || isDeleting}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-white/40"
+                      placeholder="mm/dd/yyyy"
+                      ariaLabel="Select due date"
                     />
                   </label>
                 </div>
