@@ -459,7 +459,10 @@ export const TaskBoard = ({
 
   return (
     <div
-      className={clsx('flex gap-4 overflow-x-auto pb-4 pr-2', isColumnsScrolling && 'snap-x')}
+      className={clsx(
+        'flex h-full min-h-0 w-full gap-4 overflow-x-auto overflow-y-hidden pr-2',
+        isColumnsScrolling && 'snap-x',
+      )}
       ref={columnsRef}
     >
       {statusOptions.map((column) => {
@@ -480,7 +483,7 @@ export const TaskBoard = ({
           <div
             key={column.key}
             className={clsx(
-              'flex w-[320px] min-w-[280px] flex-shrink-0 flex-col rounded-3xl border border-white/10 bg-white/5 p-4 shadow-card backdrop-blur',
+              'flex h-full min-h-0 max-h-full w-[320px] min-w-[280px] flex-shrink-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 shadow-card backdrop-blur',
               isDragTarget && 'border-white/50 shadow-card',
               isColumnDragTarget && 'ring-2 ring-white/40',
               isColumnDragging && 'opacity-70',
@@ -526,8 +529,8 @@ export const TaskBoard = ({
             </div>
             <div
               className={clsx(
-                'mt-4 flex flex-1 flex-col gap-3',
-                isDragTarget && 'rounded-2xl border border-dashed border-white/30 bg-white/5 p-3',
+                'flex flex-1 min-h-0 max-h-full flex-col gap-3 overflow-y-auto pr-1 pt-4',
+                isDragTarget && 'rounded-2xl border border-dashed border-white/30 bg-white/5 px-3 py-3',
               )}
               onDragOver={(event) => handleColumnDragOver(event, column.key)}
               onDragEnter={(event) => handleColumnDragOver(event, column.key)}

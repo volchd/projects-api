@@ -53,7 +53,7 @@ export const ProjectSidebar = ({
   );
 
   return (
-    <aside className="glass-panel flex w-full flex-shrink-0 flex-col gap-6 rounded-3xl p-6 lg:w-80">
+    <aside className="glass-panel flex h-full max-h-full flex-col gap-6 overflow-hidden rounded-3xl p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="panel-section-title">Workspace</p>
@@ -69,7 +69,7 @@ export const ProjectSidebar = ({
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.4em] text-white/60">
           <span>Projects</span>
           {projectCountLabel ? <span className="text-[0.7rem] text-white/40">{projectCountLabel}</span> : null}

@@ -181,7 +181,7 @@ export const TaskList = ({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto space-y-6 pr-1">
       {statusOptions.map((statusOption) => {
         const statusTasks = tasksByStatus[statusOption.key] ?? [];
         const showLoading = isLoading && statusTasks.length === 0;
