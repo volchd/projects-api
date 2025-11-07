@@ -30,6 +30,20 @@ type TaskListProps = {
   onEditTask: (taskId: string) => void;
 };
 
+const isPastDue = (dueDate?: string | null) => {
+  if (!dueDate) {
+    return false;
+  }
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) {
+    return false;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
+};
+
 export const TaskList = ({
   tasks,
   statuses,
@@ -277,7 +291,22 @@ export const TaskList = ({
                 >
                   <header className="flex items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
-                      <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                        {isPastDue(task.dueDate) ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-rose-500 dark:text-rose-300" title="Task is past due">
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="currentColor"
+                            >
+                              <path d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm0 20a9 9 0 1 1 9-9 9.01 9.01 0 0 1-9 9Zm.5-9.914V7h-2v5.5l4.5 2.7 1-1.73Z" />
+                            </svg>
+                            Due
+                          </span>
+                        ) : null}
+                      </div>
                       {task.priority !== 'None' ? (
                         <span
                           className={clsx(
