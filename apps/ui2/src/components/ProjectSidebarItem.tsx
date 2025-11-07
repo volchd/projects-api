@@ -35,7 +35,7 @@ export const ProjectSidebarItem = ({
     <li>
       <div
         className={clsx(
-          'flex items-center justify-between rounded-2xl border px-4 py-3 transition',
+          'group flex items-center justify-between rounded-2xl border px-4 py-3 transition',
           isActive
             ? 'border-white/50 bg-white/10 shadow-card'
             : 'border-white/10 bg-white/0 hover:border-white/30 hover:bg-white/5',
@@ -48,7 +48,7 @@ export const ProjectSidebarItem = ({
         >
           {project.name}
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
           <button
             type="button"
             className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 text-white/70 transition hover:border-white/40 hover:text-white"
