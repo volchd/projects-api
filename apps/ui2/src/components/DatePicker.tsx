@@ -16,18 +16,31 @@ const DISPLAY_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
 };
 
+const parseLocalIsoDate = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) {
+    return null;
+  }
+  return new Date(year, month - 1, day);
+};
+
 const formatDisplay = (value: string, placeholder?: string) => {
   if (!value) {
     return placeholder ?? 'mm/dd/yyyy';
   }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const date = parseLocalIsoDate(value);
+  if (!date || Number.isNaN(date.getTime())) {
     return placeholder ?? 'mm/dd/yyyy';
   }
   return date.toLocaleDateString('en-US', DISPLAY_OPTIONS);
 };
 
-const toISODate = (date: Date) => date.toISOString().slice(0, 10);
+const toISODate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const addMonths = (date: Date, amount: number) => {
   const next = new Date(date);
@@ -56,8 +69,8 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(() => (value ? new Date(value) : new Date()));
-  const selectedDate = value ? new Date(value) : null;
+  const [viewDate, setViewDate] = useState(() => (value ? parseLocalIsoDate(value) ?? new Date() : new Date()));
+  const selectedDate = value ? parseLocalIsoDate(value) : null;
 
   useClickOutside(
     containerRef,
@@ -69,8 +82,8 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
 
   useEffect(() => {
     if (value) {
-      const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) {
+      const parsed = parseLocalIsoDate(value);
+      if (parsed && !Number.isNaN(parsed.getTime())) {
         setViewDate(parsed);
       }
     }
@@ -105,7 +118,15 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
     if (disabled) {
       return;
     }
-    setIsOpen((current) => !current);
+    setIsOpen((current) => {
+      const next = !current;
+      if (next && !value) {
+        const today = new Date();
+        onChange(toISODate(today));
+        setViewDate(today);
+      }
+      return next;
+    });
   };
 
   const isSameDay = (a: Date | null, b: Date) => {
