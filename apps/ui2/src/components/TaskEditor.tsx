@@ -88,6 +88,7 @@ export const TaskEditor = ({
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [labelInput, setLabelInput] = useState('');
   const [labelError, setLabelError] = useState<string | null>(null);
+  const [labelQuery, setLabelQuery] = useState('');
 
   useEffect(() => {
     setValues({
@@ -156,8 +157,12 @@ export const TaskEditor = ({
       merged.push(label);
     }
 
-    return sortLabels(merged);
-  }, [availableLabels, values.labels]);
+    const filtered = labelQuery.trim()
+      ? merged.filter((label) => label.toLowerCase().includes(labelQuery.trim().toLowerCase()))
+      : merged;
+
+    return sortLabels(filtered);
+  }, [availableLabels, labelQuery, values.labels]);
 
   const isLabelSelected = (label: TaskLabel) =>
     values.labels.some((value) => value.toLowerCase() === label.toLowerCase());
@@ -180,12 +185,13 @@ export const TaskEditor = ({
     setLabelError(null);
   };
 
-  const handleAddLabel = () => {
+  const handleAddLabel = (sourceValue?: string) => {
     if (isSubmitting || isDeleting) {
       return;
     }
 
-    const normalized = labelInput.trim().replace(/\s+/g, ' ');
+    const raw = sourceValue ?? labelQuery;
+    const normalized = raw.trim().replace(/\s+/g, ' ');
     if (!normalized) {
       setLabelError('Enter a label name');
       return;
@@ -209,11 +215,9 @@ export const TaskEditor = ({
       ...prev,
       labels: sortLabels([...prev.labels, existing]),
     }));
-    setLabelInput('');
     setLabelError(null);
+    setLabelQuery('');
   };
-
-  const canAddLabel = Boolean(labelInput.trim()) && !isSubmitting && !isDeleting;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -340,61 +344,81 @@ export const TaskEditor = ({
                     <span className="font-semibold text-slate-800 dark:text-white">Labels</span>
                     <span className="text-slate-500 dark:text-white/50">{values.labels.length} selected</span>
                   </div>
-                  {labelOptions.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {labelOptions.map((label) => {
-                        const isActive = isLabelSelected(label);
-                        return (
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <input
+                        type="search"
+                        placeholder="Search or create labels (press Enter)"
+                        value={labelQuery}
+                        onChange={(event) => {
+                          setLabelQuery(event.target.value);
+                          if (labelError) {
+                            setLabelError(null);
+                          }
+                        }}
+                        disabled={isSubmitting || isDeleting}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' && labelQuery.trim()) {
+                            event.preventDefault();
+                            handleAddLabel(labelQuery);
+                          } else if (event.key === 'Escape') {
+                            setLabelQuery('');
+                          }
+                        }}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 pr-16 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40"
+                      />
+                      {labelQuery ? (
+                        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
                           <button
                             type="button"
-                            key={label.toLowerCase()}
-                            className={clsx(
-                              'rounded-full border px-3 py-1 text-xs font-semibold transition',
-                              isActive
-                                ? 'border-slate-300 bg-slate-100 text-slate-800 dark:border-white dark:bg-white dark:text-slate-900'
-                                : 'border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900 dark:border-white/15 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white',
-                            )}
-                            onClick={() => handleToggleLabel(label)}
-                            disabled={isSubmitting || isDeleting}
-                            aria-pressed={isActive}
+                            className="text-xs text-slate-400 transition hover:text-slate-600 dark:text-white/50 dark:hover:text-white/70"
+                            onClick={() => setLabelQuery('')}
+                            aria-label="Clear label search"
                           >
-                            {label}
+                            ×
                           </button>
-                        );
-                      })}
+                          <span className="rounded-lg border border-slate-200 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500 dark:border-white/20 dark:text-white/70">
+                            Enter
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 dark:text-white/50">No labels yet. Create one below.</p>
-                  )}
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      type="text"
-                      value={labelInput}
-                      onChange={(event) => {
-                        setLabelInput(event.target.value);
-                        if (labelError) {
-                          setLabelError(null);
-                        }
-                      }}
-                      placeholder="New label"
-                      disabled={isSubmitting || isDeleting}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          handleAddLabel();
-                        }
-                      }}
-                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddLabel}
-                      disabled={!canAddLabel}
-                      className="rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60 dark:bg-white/10 dark:hover:bg-white/20"
-                    >
-                      Add
-                    </button>
+                    {labelQuery.trim() && labelOptions.length ? (
+                      <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/15 dark:bg-white/5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-white/50">
+                          Select existing label
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {labelOptions.slice(0, 8).map((label) => (
+                            <button
+                              type="button"
+                              key={label.toLowerCase()}
+                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40"
+                              onClick={() => handleToggleLabel(label)}
+                              disabled={isSubmitting || isDeleting}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="text-xs text-slate-500 dark:text-white/50">
+                      {labelQuery.trim() ? (
+                        <>
+                          Press <span className="font-semibold">Enter</span> to create{' '}
+                          <span className="font-semibold">{labelQuery.trim()}</span>
+                        </>
+                      ) : (
+                        'Type a label name to search existing labels or press Enter to create a new one.'
+                      )}
+                    </div>
                   </div>
+                  {labelError ? (
+                    <p className="text-xs text-rose-500 dark:text-rose-300" role="alert">
+                      {labelError}
+                    </p>
+                  ) : null}
                   {values.labels.length ? (
                     <div className="flex flex-wrap gap-2">
                       {values.labels.map((label) => (
