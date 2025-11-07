@@ -53,7 +53,7 @@ export const ProjectSidebar = ({
   );
 
   return (
-    <aside className="glass-panel flex h-full max-h-full flex-col gap-6 overflow-hidden rounded-3xl p-6">
+    <aside className="glass-panel flex h-full max-h-full flex-col gap-6 overflow-hidden rounded-none p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="panel-section-title">Workspace</p>

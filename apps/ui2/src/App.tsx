@@ -647,7 +647,7 @@ function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100 lg:h-screen lg:flex-row lg:overflow-hidden">
-      <div className="flex-shrink-0 px-4 py-6 sm:px-6 lg:px-10 lg:min-h-screen lg:h-screen lg:w-80">
+      <div className="flex-shrink-0 px-0 py-0 lg:min-h-screen lg:h-screen lg:w-80">
         <div className="h-full">
           <ProjectSidebar
             projects={sortedProjects}
@@ -663,7 +663,7 @@ function App() {
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-screen lg:h-screen flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-10 overflow-hidden">
+      <div className="flex flex-1 min-h-screen lg:h-screen flex-col gap-0 px-0 pb-0 overflow-hidden">
         <Topbar
           activeView={taskView}
           onSelectView={handleSelectView}
@@ -672,7 +672,7 @@ function App() {
           onToggleTheme={toggleTheme}
         />
         <div className="flex-1 min-h-0 overflow-hidden">
-          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-[2.5rem] p-6 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
+          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-none p-6 pt-0 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
               <p className="panel-section-title">

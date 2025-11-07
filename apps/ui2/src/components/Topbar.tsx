@@ -48,7 +48,7 @@ const TAB_OPTIONS = [
 ] as const;
 
 export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette, theme, onToggleTheme }: TopbarProps) => (
-  <header className="glass-panel flex flex-col gap-4 rounded-3xl p-4 lg:flex-row lg:items-center lg:gap-6">
+  <header className="glass-panel flex flex-col gap-4 rounded-none p-4 shadow-none ring-1 ring-slate-100 dark:ring-white/10 lg:flex-row lg:items-center lg:gap-6">
     <div className="w-full flex-1">
       <label htmlFor="task-search" className="sr-only">
         Search tasks
