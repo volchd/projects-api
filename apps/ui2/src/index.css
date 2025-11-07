@@ -24,6 +24,24 @@
   #root {
     @apply min-h-screen;
   }
+
+  select {
+    color-scheme: light;
+    @apply bg-white text-slate-900;
+  }
+
+  select option {
+    @apply bg-white text-slate-900;
+  }
+
+  .dark select {
+    color-scheme: dark;
+    @apply bg-slate-900 text-white;
+  }
+
+  .dark select option {
+    @apply bg-slate-900 text-white;
+  }
 }
 
 @layer components {

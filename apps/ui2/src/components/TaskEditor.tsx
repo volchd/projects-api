@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import type { TaskLabel, TaskPriority, TaskStatus } from '../types';
 import { TASK_PRIORITY_VALUES, toPriorityOptions } from '../constants/taskPriorityOptions';
+import { Select } from './Select';
 
 const EMPTY_DESCRIPTION = '';
 const DEFAULT_PRIORITY: TaskPriority = 'None';
@@ -313,35 +314,25 @@ export const TaskEditor = ({
               {showStatusSelector ? (
                 <label className="flex flex-col gap-2 text-sm text-slate-700 dark:text-white/80">
                   <span>Status</span>
-                  <select
+                  <Select<TaskStatus>
                     value={values.status}
-                    onChange={(event) => setValues((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}
+                    options={statuses}
                     disabled={isSubmitting || isDeleting}
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-white/40"
-                  >
-                    {statuses.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    ariaLabel="Select status"
+                    onChange={(selected) => setValues((prev) => ({ ...prev, status: selected }))}
+                  />
                 </label>
               ) : null}
               {showPrioritySelector ? (
                 <label className="flex flex-col gap-2 text-sm text-slate-700 dark:text-white/80">
                   <span>Priority</span>
-                  <select
+                  <Select<TaskPriority>
                     value={values.priority}
-                    onChange={(event) => setValues((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))}
+                    options={priorityOptions}
                     disabled={isSubmitting || isDeleting}
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-white/40"
-                  >
-                    {priorityOptions.map((option) => (
-                      <option key={option.key} value={option.key}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    ariaLabel="Select priority"
+                    onChange={(selected) => setValues((prev) => ({ ...prev, priority: selected }))}
+                  />
                 </label>
               ) : null}
               {showLabelSelector ? (
