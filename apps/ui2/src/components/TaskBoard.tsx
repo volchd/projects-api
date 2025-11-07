@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import type { DragEvent as ReactDragEvent } from 'react';
 import clsx from 'clsx';
 import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
+import { PRIORITY_COLOR_MAP } from '../constants/priorityColors';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
@@ -583,8 +584,18 @@ export const TaskBoard = ({
                   aria-grabbed={draggingTaskId === task.taskId}
                   >
                     <header className="flex items-start justify-between gap-2">
-                      <div>
+                      <div className="flex flex-col gap-1">
                         <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                        {task.priority !== 'None' ? (
+                          <span
+                            className={clsx(
+                              'text-xs font-semibold uppercase tracking-wide',
+                              PRIORITY_COLOR_MAP[task.priority],
+                            )}
+                          >
+                            {task.priority}
+                          </span>
+                        ) : null}
                       </div>
                       <button
                         type="button"
