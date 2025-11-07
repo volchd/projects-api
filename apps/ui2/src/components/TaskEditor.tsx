@@ -135,7 +135,7 @@ export const TaskEditor = ({
   const sortLabels = (labels: TaskLabel[]) =>
     [...labels].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-  const labelOptions = useMemo(() => {
+  const allLabelOptions = useMemo(() => {
     const seen = new Set<string>();
     const merged: TaskLabel[] = [];
 
@@ -157,12 +157,16 @@ export const TaskEditor = ({
       merged.push(label);
     }
 
-    const filtered = labelQuery.trim()
-      ? merged.filter((label) => label.toLowerCase().includes(labelQuery.trim().toLowerCase()))
-      : merged;
+    return sortLabels(merged);
+  }, [availableLabels, values.labels]);
 
-    return sortLabels(filtered);
-  }, [availableLabels, labelQuery, values.labels]);
+  const labelOptions = useMemo(() => {
+    const query = labelQuery.trim().toLowerCase();
+    if (!query) {
+      return allLabelOptions;
+    }
+    return allLabelOptions.filter((label) => label.toLowerCase().includes(query));
+  }, [allLabelOptions, labelQuery]);
 
   const isLabelSelected = (label: TaskLabel) =>
     values.labels.some((value) => value.toLowerCase() === label.toLowerCase());
@@ -209,7 +213,7 @@ export const TaskEditor = ({
     }
 
     const existing =
-      labelOptions.find((option) => option.toLowerCase() === key) ?? normalized;
+      allLabelOptions.find((option) => option.toLowerCase() === key) ?? normalized;
 
     setValues((prev) => ({
       ...prev,
