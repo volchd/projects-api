@@ -81,7 +81,7 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette, theme, 
             className={clsx(
               'inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold uppercase tracking-wide transition',
               activeView === tab.key
-                ? 'bg-white text-slate-900 dark:text-slate-900'
+                ? 'bg-gradient-to-r from-slate-900 to-slate-700 text-white shadow-inner dark:text-slate-900 dark:from-white dark:to-slate-200 dark:text-slate-900'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10',
             )}
             type="button"
