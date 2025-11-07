@@ -689,34 +689,14 @@ function App() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {projectFormMode === null && selectedProject ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleOpenTaskModal}
-                    className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 dark:bg-white/10 dark:hover:bg-white/20"
-                  >
-                    New task
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedProject) {
-                        handleEditRequest(selectedProject);
-                      }
-                    }}
-                    className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
-                  >
-                    Edit project
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={handleOpenTaskModal}
+                  className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 dark:bg-white/10 dark:hover:bg-white/20"
+                >
+                  New task
+                </button>
               ) : null}
-              <button
-                type="button"
-                onClick={handleCreateRequest}
-                className="inline-flex items-center rounded-full border border-dashed border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/30 dark:text-white/70 dark:hover:border-white/60 dark:hover:text-white"
-              >
-                New project
-              </button>
             </div>
           </header>
 
