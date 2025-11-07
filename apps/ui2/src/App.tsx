@@ -644,27 +644,31 @@ function App() {
         : false;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 lg:flex-row">
-      <ProjectSidebar
-        projects={sortedProjects}
-        isLoading={projectsLoading}
-        error={projectsError}
-        selectedProjectId={selectedProjectId}
-        deletingProjectId={deletingProjectId}
-        onSelectProject={handleSelectProject}
-        onCreateProject={handleCreateRequest}
-        onEditProject={handleEditRequest}
-        onDeleteProject={handleDeleteRequest}
-      />
+    <div className="flex min-h-screen lg:h-screen flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 lg:flex-row lg:overflow-hidden">
+      <div className="flex-shrink-0 px-4 py-6 sm:px-6 lg:px-10 lg:min-h-screen lg:h-screen lg:w-80">
+        <div className="h-full">
+          <ProjectSidebar
+            projects={sortedProjects}
+            isLoading={projectsLoading}
+            error={projectsError}
+            selectedProjectId={selectedProjectId}
+            deletingProjectId={deletingProjectId}
+            onSelectProject={handleSelectProject}
+            onCreateProject={handleCreateRequest}
+            onEditProject={handleEditRequest}
+            onDeleteProject={handleDeleteRequest}
+          />
+        </div>
+      </div>
 
-      <main className="flex flex-1 flex-col gap-6">
+      <div className="flex flex-1 min-h-screen lg:h-screen flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-10 overflow-hidden">
         <Topbar
           activeView={taskView}
           onSelectView={handleSelectView}
           onOpenCommandPalette={handleOpenCommandPalette}
         />
-        <section className="glass-panel flex flex-1 flex-col gap-6 p-6">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden p-6">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
               <p className="panel-section-title">
@@ -724,44 +728,47 @@ function App() {
             </div>
           ) : null}
 
-          {projectFormMode === null && hasProject ? (
-            taskView === 'board' ? (
-              <TaskBoard
-                key={`${selectedProjectId ?? 'no-project'}-board`}
-                tasks={tasks}
-                statuses={activeStatuses}
-                labels={activeLabels}
-                isLoading={tasksLoading}
-                error={tasksError}
-                creatingStatus={creatingTaskStatus}
-                updatingTaskId={updatingTaskId}
-                deletingTaskId={deletingTaskId}
-                isUpdatingStatuses={isUpdatingSelectedProject}
-                onCreateTask={handleTaskCreate}
-                onUpdateTask={handleTaskUpdate}
-                onAddStatus={handleAddStatus}
-                onReorderStatuses={handleReorderStatuses}
-                onEditTask={handleTaskEditRequest}
-              />
-            ) : (
-              <TaskList
-                key={`${selectedProjectId ?? 'no-project'}-list`}
-                tasks={tasks}
-                statuses={activeStatuses}
-                labels={activeLabels}
-                isLoading={tasksLoading}
-                error={tasksError}
-                creatingStatus={creatingTaskStatus}
-                updatingTaskId={updatingTaskId}
-                deletingTaskId={deletingTaskId}
-                onCreateTask={handleTaskCreate}
-                onUpdateTask={handleTaskUpdate}
-                onEditTask={handleTaskEditRequest}
-              />
-            )
-          ) : null}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {projectFormMode === null && hasProject ? (
+              taskView === 'board' ? (
+                <TaskBoard
+                  key={`${selectedProjectId ?? 'no-project'}-board`}
+                  tasks={tasks}
+                  statuses={activeStatuses}
+                  labels={activeLabels}
+                  isLoading={tasksLoading}
+                  error={tasksError}
+                  creatingStatus={creatingTaskStatus}
+                  updatingTaskId={updatingTaskId}
+                  deletingTaskId={deletingTaskId}
+                  isUpdatingStatuses={isUpdatingSelectedProject}
+                  onCreateTask={handleTaskCreate}
+                  onUpdateTask={handleTaskUpdate}
+                  onAddStatus={handleAddStatus}
+                  onReorderStatuses={handleReorderStatuses}
+                  onEditTask={handleTaskEditRequest}
+                />
+              ) : (
+                <TaskList
+                  key={`${selectedProjectId ?? 'no-project'}-list`}
+                  tasks={tasks}
+                  statuses={activeStatuses}
+                  labels={activeLabels}
+                  isLoading={tasksLoading}
+                  error={tasksError}
+                  creatingStatus={creatingTaskStatus}
+                  updatingTaskId={updatingTaskId}
+                  deletingTaskId={deletingTaskId}
+                  onCreateTask={handleTaskCreate}
+                  onUpdateTask={handleTaskUpdate}
+                  onEditTask={handleTaskEditRequest}
+                />
+              )
+            ) : null}
+          </div>
         </section>
-      </main>
+        </div>
+      </div>
 
       <ConfirmDialog
         open={Boolean(pendingDeleteTask)}
@@ -905,7 +912,6 @@ function App() {
           />
         ) : null}
       </Modal>
-      </div>
     </div>
   );
 }
