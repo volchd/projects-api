@@ -5,6 +5,7 @@ import { useClickOutside } from '../hooks/useClickOutside';
 type SelectOption<T extends string> = {
   key: T;
   label: string;
+  className?: string;
 };
 
 type SelectProps<T extends string> = {
@@ -118,7 +119,7 @@ export const Select = <T extends string>({
         onKeyDown={handleKeyDown}
         disabled={disabled}
       >
-        <span>{selected?.label ?? ''}</span>
+        <span className={selected?.className}>{selected?.label ?? ''}</span>
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-slate-500 dark:text-white/70">
           <path
             fill="currentColor"
@@ -148,7 +149,7 @@ export const Select = <T extends string>({
                   )}
                   onClick={() => handleSelect(option)}
                 >
-                  <span>{option.label}</span>
+                  <span className={option.className}>{option.label}</span>
                   {isSelected ? (
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-indigo-600 dark:text-indigo-300">
                       <path
