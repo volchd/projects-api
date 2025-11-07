@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 
 type TopbarProps = {
-  activeView: 'board' | 'list';
-  onSelectView: (view: 'board' | 'list') => void;
+  activeView: 'board' | 'list' | 'comments';
+  onSelectView: (view: 'board' | 'list' | 'comments') => void;
   onOpenCommandPalette: () => void;
 };
 
@@ -27,6 +27,18 @@ const TAB_OPTIONS = [
         <path
           fill="currentColor"
           d="M5 6h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Zm0 5h14a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"
+        />
+      </svg>
+    ),
+  },
+  {
+    key: 'comments',
+    label: 'Comments',
+    icon: (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M5 3a2 2 0 0 0-2 2v10.59L5.29 13.3A1 1 0 0 1 6 13h13a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"
         />
       </svg>
     ),
@@ -87,18 +99,6 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
           </button>
         ))}
       </nav>
-      <button
-        type="button"
-        className="inline-flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-          <path
-            fill="currentColor"
-            d="M12 3a9 9 0 0 0-7.49 13.92l-1.39 3.47a1 1 0 0 0 1.29 1.29l3.47-1.39A9 9 0 1 0 12 3Zm0 16a7 7 0 1 1 7-7 7 7 0 0 1-7 7Z"
-          />
-        </svg>
-        Comments
-      </button>
       <button
         type="button"
         className="inline-flex items-center gap-3 rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"

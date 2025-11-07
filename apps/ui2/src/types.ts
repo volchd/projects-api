@@ -15,6 +15,8 @@ export type TaskPriority = 'None' | 'Low' | 'Normal' | 'High' | 'Urgent';
 export type ProjectLabel = string;
 export type TaskLabel = ProjectLabel;
 
+export type TaskView = 'board' | 'list' | 'comments';
+
 export type Task = {
   projectId: string;
   taskId: string;

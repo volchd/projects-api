@@ -11,10 +11,9 @@ import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
-import type { Project, Task, TaskPriority, TaskStatus } from './types';
+import type { Project, Task, TaskPriority, TaskStatus, TaskView } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
-type TaskView = 'board' | 'list';
 
 const UNKNOWN_ERROR = 'Unknown error';
 const EMPTY_STATUSES: TaskStatus[] = [];
