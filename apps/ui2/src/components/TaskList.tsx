@@ -277,7 +277,6 @@ export const TaskList = ({
                   <header className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/50">{task.status}</p>
                     </div>
                     <button
                       type="button"
