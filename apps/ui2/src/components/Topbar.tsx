@@ -4,6 +4,8 @@ type TopbarProps = {
   activeView: 'board' | 'list' | 'comments';
   onSelectView: (view: 'board' | 'list' | 'comments') => void;
   onOpenCommandPalette: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 };
 
 const TAB_OPTIONS = [
@@ -45,7 +47,7 @@ const TAB_OPTIONS = [
   },
 ] as const;
 
-export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: TopbarProps) => (
+export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette, theme, onToggleTheme }: TopbarProps) => (
   <header className="glass-panel flex flex-col gap-4 rounded-3xl p-4 lg:flex-row lg:items-center lg:gap-6">
     <div className="w-full flex-1">
       <label htmlFor="task-search" className="sr-only">
@@ -55,7 +57,7 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
+          className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-white/40"
         >
           <path
             fill="currentColor"
@@ -66,21 +68,21 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
           id="task-search"
           type="search"
           placeholder="Search tasks..."
-          className="w-full rounded-2xl border border-white/10 bg-white/5 px-12 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:bg-transparent focus:outline-none focus:ring-0"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-12 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-0 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40 dark:focus:bg-transparent"
         />
       </div>
     </div>
 
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-      <nav className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-1">
+      <nav className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 p-1 dark:border-white/10 dark:bg-white/5">
         {TAB_OPTIONS.map((tab) => (
           <button
             key={tab.key}
             className={clsx(
               'inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-semibold uppercase tracking-wide transition',
               activeView === tab.key
-                ? 'bg-white text-slate-900'
-                : 'text-white/70 hover:text-white hover:bg-white/10',
+                ? 'bg-white text-slate-900 dark:text-slate-900'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10',
             )}
             type="button"
             onClick={() => onSelectView(tab.key)}
@@ -101,7 +103,7 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
       </nav>
       <button
         type="button"
-        className="inline-flex items-center gap-3 rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+        className="inline-flex items-center gap-3 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
         onClick={onOpenCommandPalette}
         aria-haspopup="dialog"
         aria-keyshortcuts="Meta+K Control+K"
@@ -111,7 +113,32 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
       </button>
       <button
         type="button"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 text-white/70 transition hover:border-white/40 hover:text-white"
+        className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
+        onClick={onToggleTheme}
+        aria-pressed={theme === 'dark'}
+      >
+        <span className="flex h-5 w-5 items-center justify-center">
+          {theme === 'dark' ? (
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+              <path
+                fill="currentColor"
+                d="M6.76 4.84 5.35 3.43a1 1 0 1 0-1.41 1.41l1.41 1.42a1 1 0 0 0 1.41-1.42Zm10.49 0a1 1 0 0 0 1.41 1.42l1.41-1.42a1 1 0 0 0-1.41-1.41Zm2.83 6.42a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2ZM11 5V3a1 1 0 0 0-2 0v2a1 1 0 0 0 2 0Zm7 7a6 6 0 1 1-6-6 6 6 0 0 1 6 6Zm-6 8a1 1 0 0 0-1 1v2a1 1 0 1 0 2 0v-2a1 1 0 0 0-1-1ZM4 11H2a1 1 0 0 0 0 2h2a1 1 0 1 0 0-2Zm-.66 7.07a1 1 0 0 0 1.41 1.41l1.42-1.41a1 1 0 0 0-1.42-1.42Zm15.56 0-1.42 1.41a1 1 0 0 0 1.42 1.41l1.41-1.41a1 1 0 1 0-1.41-1.41Z"
+              />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+              <path
+                fill="currentColor"
+                d="M21.64 13a1 1 0 0 0-1-.27 8 8 0 0 1-2.82.51A8.15 8.15 0 0 1 9.66 5 8 8 0 0 1 10.18 2.1a1 1 0 0 0-.78-1.16 1 1 0 0 0-.91.28A10.14 10.14 0 1 0 22 13.91a1 1 0 0 0-.36-.91Z"
+              />
+            </svg>
+          )}
+        </span>
+        <span>{theme === 'dark' ? 'Night' : 'Day'}</span>
+      </button>
+      <button
+        type="button"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
         aria-label="Notifications"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
@@ -121,8 +148,8 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette }: Topba
           />
         </svg>
       </button>
-      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-1">
-        <div className="text-sm font-semibold text-white/80">Invite</div>
+      <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1 dark:border-white/10 dark:bg-white/5">
+        <div className="text-sm font-semibold text-slate-700 dark:text-white/80">Invite</div>
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-sm font-semibold text-white shadow-lg"

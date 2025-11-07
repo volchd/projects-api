@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from './hooks/useProjects';
 import { useTasks } from './hooks/useTasks';
+import { useTheme } from './hooks/useTheme';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ProjectForm } from './components/ProjectForm';
 import { TaskBoard } from './components/TaskBoard';
@@ -117,6 +118,8 @@ function App() {
     updateTask,
     deleteTask,
   } = useTasks(selectedProjectId, activeStatuses);
+
+  const { theme, toggleTheme } = useTheme();
 
   const taskBeingEdited = useMemo(
     () =>
@@ -643,7 +646,7 @@ function App() {
         : false;
 
   return (
-    <div className="flex min-h-screen lg:h-screen flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 lg:flex-row lg:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100 lg:h-screen lg:flex-row lg:overflow-hidden">
       <div className="flex-shrink-0 px-4 py-6 sm:px-6 lg:px-10 lg:min-h-screen lg:h-screen lg:w-80">
         <div className="h-full">
           <ProjectSidebar
@@ -665,21 +668,23 @@ function App() {
           activeView={taskView}
           onSelectView={handleSelectView}
           onOpenCommandPalette={handleOpenCommandPalette}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <div className="flex-1 min-h-0 overflow-hidden">
-          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden p-6">
+          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-[2.5rem] p-6 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
               <p className="panel-section-title">
                 {projectFormMode === 'create' ? 'New project' : 'Workspace overview'}
               </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-white">
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
                 {projectFormMode === 'create'
                   ? 'Create a project'
                   : selectedProject?.name ?? 'Select a project'}
               </h1>
               {projectFormMode !== 'create' && selectedProject?.description ? (
-                <p className="max-w-2xl text-sm text-white/70">{selectedProject.description}</p>
+                <p className="max-w-2xl text-sm text-slate-600 dark:text-white/70">{selectedProject.description}</p>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -688,7 +693,7 @@ function App() {
                   <button
                     type="button"
                     onClick={handleOpenTaskModal}
-                    className="inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                    className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 dark:bg-white/10 dark:hover:bg-white/20"
                   >
                     New task
                   </button>
@@ -699,7 +704,7 @@ function App() {
                         handleEditRequest(selectedProject);
                       }
                     }}
-                    className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
+                    className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
                   >
                     Edit project
                   </button>
@@ -708,7 +713,7 @@ function App() {
               <button
                 type="button"
                 onClick={handleCreateRequest}
-                className="inline-flex items-center rounded-full border border-dashed border-white/30 px-4 py-2 text-sm font-semibold text-white/70 transition hover:border-white/60 hover:text-white"
+                className="inline-flex items-center rounded-full border border-dashed border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/30 dark:text-white/70 dark:hover:border-white/60 dark:hover:text-white"
               >
                 New project
               </button>
@@ -716,13 +721,13 @@ function App() {
           </header>
 
           {boardError && projectFormMode === null ? (
-            <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-100">
               {boardError}
             </div>
           ) : null}
 
           {projectFormMode === null && !hasProject ? (
-            <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sm text-white/70">
+            <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
               Choose a project to view its tasks.
             </div>
           ) : null}

@@ -4,13 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
 @layer base {
-  :root {
-    color-scheme: dark;
+  body {
+    @apply min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans text-slate-900 antialiased;
   }
 
-  body {
-    @apply min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 font-sans text-slate-100 antialiased;
+  .dark body {
+    @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100;
   }
 
   #root {
@@ -20,10 +28,14 @@
 
 @layer components {
   .glass-panel {
-    @apply rounded-3xl border border-white/5 bg-white/5 shadow-card backdrop-blur-xl;
+    @apply rounded-3xl border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur-xl dark:border-white/5 dark:bg-white/5 dark:shadow-card;
   }
 
   .panel-section-title {
-    @apply text-xs font-semibold uppercase tracking-[0.3em] text-white/60;
+    @apply text-xs font-semibold uppercase tracking-[0.3em] text-slate-500;
+  }
+
+  .dark .panel-section-title {
+    @apply text-white/60;
   }
 }

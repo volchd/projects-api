@@ -58,7 +58,7 @@ export const ProjectForm = ({
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <label htmlFor={`${mode}-project-name`} className="text-sm font-medium text-white/80">
+        <label htmlFor={`${mode}-project-name`} className="text-sm font-medium text-slate-700 dark:text-white/80">
           Project name
         </label>
         <input
@@ -68,12 +68,12 @@ export const ProjectForm = ({
           onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
           disabled={isSubmitting}
           placeholder="Project name"
-          className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-base text-white/90 placeholder:text-white/40 focus:border-white/40 focus:bg-white/5 focus:outline-none focus:ring-0 disabled:opacity-60"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white/90 dark:placeholder:text-white/40 dark:focus:border-white/40 dark:focus:bg-white/5"
         />
       </div>
       {isEditMode ? (
         <div className="space-y-2">
-          <label htmlFor={`${mode}-project-description`} className="text-sm font-medium text-white/80">
+          <label htmlFor={`${mode}-project-description`} className="text-sm font-medium text-slate-700 dark:text-white/80">
             Description
           </label>
           <textarea
@@ -83,12 +83,12 @@ export const ProjectForm = ({
             disabled={isSubmitting}
             placeholder="Short description (optional)"
             rows={3}
-            className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-base text-white/90 placeholder:text-white/40 focus:border-white/40 focus:bg-white/5 focus:outline-none focus:ring-0 disabled:opacity-60"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white/90 dark:placeholder:text-white/40 dark:focus:border-white/40 dark:focus:bg-white/5"
           />
         </div>
       ) : null}
       {error ? (
-        <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-100">
           {error}
         </div>
       ) : null}
@@ -102,7 +102,7 @@ export const ProjectForm = ({
         </button>
         {onCancel ? (
           <button
-            className="inline-flex items-center rounded-2xl border border-white/30 px-5 py-2 text-sm font-semibold text-white/80 transition hover:border-white/50 hover:text-white disabled:opacity-60"
+            className="inline-flex items-center rounded-2xl border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/30 dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}

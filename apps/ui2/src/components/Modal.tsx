@@ -75,12 +75,12 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 px-4 py-8 backdrop-blur-md dark:bg-slate-950/80"
       role="presentation"
     >
       <div
         className={clsx(
-          'w-full rounded-3xl border border-white/10 bg-slate-950/80 p-6 shadow-card',
+          'w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-soft dark:border-white/10 dark:bg-slate-950/80 dark:shadow-card',
           size === 'wide' ? 'max-w-4xl' : 'max-w-2xl',
         )}
         ref={containerRef}
@@ -91,12 +91,12 @@ export const Modal = ({
         tabIndex={-1}
       >
         {title ? (
-          <h2 id={resolvedTitleId} className="text-2xl font-semibold text-white">
+          <h2 id={resolvedTitleId} className="text-2xl font-semibold text-slate-900 dark:text-white">
             {title}
           </h2>
         ) : null}
         {description ? (
-          <p id={resolvedDescriptionId} className="mt-2 text-sm text-white/70">
+          <p id={resolvedDescriptionId} className="mt-2 text-sm text-slate-600 dark:text-white/70">
             {description}
           </p>
         ) : null}

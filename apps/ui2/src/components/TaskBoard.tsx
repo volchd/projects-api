@@ -483,9 +483,11 @@ export const TaskBoard = ({
           <div
             key={column.key}
             className={clsx(
-              'flex h-full min-h-0 max-h-full w-[320px] min-w-[280px] flex-shrink-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 shadow-card backdrop-blur',
-              isDragTarget && 'border-white/50 shadow-card',
-              isColumnDragTarget && 'ring-2 ring-white/40',
+              'flex h-full min-h-0 max-h-full w-[320px] min-w-[280px] flex-shrink-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 ring-1 ring-slate-100 shadow-none transition-shadow dark:border-white/10 dark:bg-white/5 dark:ring-white/10',
+              isDragTarget
+                ? 'border-slate-400 ring-slate-200 shadow-soft dark:border-white/50 dark:ring-white/40 dark:shadow-card'
+                : 'hover:shadow-soft dark:hover:shadow-card',
+              isColumnDragTarget && 'ring-2 ring-slate-300 dark:ring-white/40',
               isColumnDragging && 'opacity-70',
             )}
             onDragOver={(event) => handleStatusDragOver(event, column.key)}
@@ -495,7 +497,7 @@ export const TaskBoard = ({
           >
             <div
               className={clsx(
-                'flex items-center justify-between rounded-2xl border border-white/5 bg-white/10 px-3 py-2 text-sm font-semibold text-white',
+                'flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-white/5 dark:bg-white/10 dark:text-white',
                 isSortable && !draggingTaskId && !isUpdatingStatuses ? 'cursor-grab active:cursor-grabbing' : '',
               )}
               draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
@@ -505,14 +507,14 @@ export const TaskBoard = ({
             >
               <div className="flex items-center gap-2">
                 <span>{column.label}</span>
-                <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white">
                   {columnTasks.length}
                 </span>
               </div>
               {isSortable ? (
                 <button
                   type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 text-white/70 transition hover:border-white/40 hover:text-white"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
                   aria-label={`Reorder ${column.label} column`}
                   draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
                   onDragStart={(event) => handleStatusDragStart(event, column.key)}
@@ -530,7 +532,8 @@ export const TaskBoard = ({
             <div
               className={clsx(
                 'flex flex-1 min-h-0 max-h-full flex-col gap-3 overflow-y-auto pr-1 pt-4',
-                isDragTarget && 'rounded-2xl border border-dashed border-white/30 bg-white/5 px-3 py-3',
+                isDragTarget &&
+                  'rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 dark:border-white/30 dark:bg-white/5',
               )}
               onDragOver={(event) => handleColumnDragOver(event, column.key)}
               onDragEnter={(event) => handleColumnDragOver(event, column.key)}
@@ -549,17 +552,17 @@ export const TaskBoard = ({
                 />
               ) : null}
               {showLoadingState ? (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/60">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
                   Loading…
                 </div>
               ) : null}
               {showErrorState ? (
-                <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-6 text-center text-sm text-rose-100">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
                   {error}
                 </div>
               ) : null}
               {showEmptyState ? (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/50">
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
                   No tasks yet.
                 </div>
               ) : null}
@@ -567,7 +570,7 @@ export const TaskBoard = ({
                 <article
                   key={task.taskId}
                   className={clsx(
-                    'rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-white/30 hover:bg-white/10',
+                    'rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10',
                     draggingTaskId === task.taskId
                       ? 'cursor-grabbing opacity-60'
                       : 'cursor-grab active:cursor-grabbing',
@@ -578,22 +581,22 @@ export const TaskBoard = ({
                   onDragStart={(event) => handleDragStart(event, task.taskId)}
                   onDragEnd={handleDragEnd}
                   aria-grabbed={draggingTaskId === task.taskId}
-                >
-                  <header className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-base font-semibold text-white">{task.name}</h3>
-                      <p className="text-xs uppercase tracking-wide text-white/50">{task.status}</p>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${task.name}`}
-                      onClick={() => {
-                        setActiveCreateStatus(null);
-                        onEditTask(task.taskId);
-                      }}
-                      disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-white/10 text-white/70 transition hover:border-white/40 hover:text-white disabled:opacity-40"
-                    >
+                  >
+                    <header className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/50">{task.status}</p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${task.name}`}
+                        onClick={() => {
+                          setActiveCreateStatus(null);
+                          onEditTask(task.taskId);
+                        }}
+                        disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-40 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
+                      >
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                         <path
                           fill="currentColor"
@@ -602,28 +605,28 @@ export const TaskBoard = ({
                       </svg>
                     </button>
                   </header>
-                  {task.labels.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {task.labels.map((label) => (
-                        <span
-                          key={`${task.taskId}-label-${label.toLowerCase()}`}
-                          className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {task.description ? (
-                    <p className="mt-2 text-sm text-white/70">{task.description}</p>
-                  ) : null}
+                    {task.labels.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {task.labels.map((label) => (
+                          <span
+                            key={`${task.taskId}-label-${label.toLowerCase()}`}
+                            className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white"
+                          >
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {task.description ? (
+                      <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{task.description}</p>
+                    ) : null}
                 </article>
               ))}
             </div>
             {activeCreateStatus === column.key ? null : (
               <button
                 type="button"
-                className="mt-4 inline-flex items-center justify-center rounded-2xl border border-dashed border-white/20 px-3 py-2 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:text-white disabled:opacity-60"
+                className="mt-4 inline-flex items-center justify-center rounded-2xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
                 onClick={() => {
                   setActiveCreateStatus(column.key);
                 }}
@@ -640,8 +643,8 @@ export const TaskBoard = ({
       })}
       <div
         className={clsx(
-          'flex w-[320px] min-w-[280px] flex-shrink-0 flex-col rounded-3xl border border-dashed border-white/20 bg-white/0 p-4 text-white/70 transition hover:border-white/40',
-          isDragOverAddColumn && 'border-white/60 bg-white/5',
+          'flex w-[320px] min-w-[280px] flex-shrink-0 flex-col rounded-3xl border border-dashed border-slate-300 bg-white p-4 text-slate-600 transition hover:border-slate-400 dark:border-white/20 dark:bg-white/0 dark:text-white/70 dark:hover:border-white/40',
+          isDragOverAddColumn && 'border-slate-500 bg-slate-50 dark:border-white/60 dark:bg-white/5',
         )}
         onDragOver={handleStatusDragEnterAddColumn}
         onDragEnter={handleStatusDragEnterAddColumn}
@@ -662,23 +665,26 @@ export const TaskBoard = ({
               placeholder="Status name"
               aria-label="Status name"
               disabled={isUpdatingStatuses}
-              className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-0 disabled:opacity-60"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40"
             />
             {addStatusError ? (
-              <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100" role="alert">
+              <div
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-100"
+                role="alert"
+              >
                 {addStatusError}
               </div>
             ) : null}
             <div className="flex flex-wrap gap-3">
               <button
-                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-60"
+                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white/10 dark:hover:bg-white/20"
                 type="submit"
                 disabled={isUpdatingStatuses || !newStatusName.trim()}
               >
                 {isUpdatingStatuses ? 'Saving…' : 'Save'}
               </button>
               <button
-                className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:opacity-60"
+                className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
                 type="button"
                 onClick={handleCancelAddStatus}
                 disabled={isUpdatingStatuses}
@@ -690,7 +696,7 @@ export const TaskBoard = ({
         ) : (
           <button
             type="button"
-            className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 px-3 py-6 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:text-white disabled:opacity-60"
+            className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-3 py-6 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
             onClick={handleStartAddStatus}
             disabled={isUpdatingStatuses}
           >

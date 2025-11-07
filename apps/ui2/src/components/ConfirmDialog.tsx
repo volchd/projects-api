@@ -44,18 +44,18 @@ export const ConfirmDialog = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-10 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 px-4 py-10 backdrop-blur-md dark:bg-slate-950/80"
       role="presentation"
     >
       <div
-        className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/80 p-6 text-center shadow-card"
+        className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-soft dark:border-white/10 dark:bg-slate-950/80 dark:shadow-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
         ref={containerRef}
       >
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-200">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200">
           <svg viewBox="0 0 24 24" focusable="false" className="h-6 w-6">
             <path
               fill="currentColor"
@@ -66,13 +66,13 @@ export const ConfirmDialog = ({
         <h2 id="confirm-dialog-title" className="mt-4 text-xl font-semibold">
           {title}
         </h2>
-        <p id="confirm-dialog-description" className="mt-2 text-sm text-white/70">
+        <p id="confirm-dialog-description" className="mt-2 text-sm text-slate-600 dark:text-white/70">
           {description}
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
-            className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white disabled:opacity-60"
+            className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
             onClick={onCancel}
             disabled={isConfirming}
           >

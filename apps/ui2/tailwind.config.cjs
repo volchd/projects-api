@@ -1,6 +1,7 @@
 const defaultTheme = require('tailwindcss/defaultTheme');
 
 module.exports = {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -21,6 +22,7 @@ module.exports = {
       },
       boxShadow: {
         card: '0 10px 25px rgba(15, 23, 42, 0.35)',
+        soft: '0 15px 35px rgba(15, 23, 42, 0.12)',
         inset: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       },
     },
