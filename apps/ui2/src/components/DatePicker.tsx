@@ -201,7 +201,7 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
                     inCurrentMonth
                       ? 'text-slate-900 hover:bg-slate-100 dark:text-white dark:hover:bg-white/10'
                       : 'text-slate-300 dark:text-white/30',
-                    isSelected && 'bg-indigo-600 text-white hover:bg-indigo-500',
+                    isSelected ? 'bg-indigo-600 text-white hover:bg-indigo-600' : 'hover:bg-transparent',
                   )}
                   onClick={() => handleSelectDate(date)}
                   disabled={disabled}
