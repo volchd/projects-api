@@ -10,14 +10,11 @@
     "dev": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run dev",
     "dev:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run dev",
     "dev:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run dev",
-    "dev:ui2": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui2 run dev",
     "build:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run build",
     "build:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run build",
-    "build:ui2": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui2 run build",
     "build": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run build",
     "test:api": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/api run test",
     "test:ui": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui run test",
-    "test:ui2": "TMPDIR=\"$(pwd)/.tmp\" npm --workspace apps/ui2 run test",
     "test": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run test",
     "lint": "TMPDIR=\"$(pwd)/.tmp\" npm --workspaces --if-present run lint"
   }

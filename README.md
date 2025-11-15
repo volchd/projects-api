@@ -4,7 +4,7 @@ This repository bundles the Serverless API and the Vite + React UI inside an npm
 
 ## Structure
 - `apps/api` — the existing Serverless + Node.js backend (moved from the old repo root).
-- `apps/ui` — placeholder for the new web client (scaffold your preferred framework here).
+- `apps/ui` — Vite + React client that talks to the Serverless API.
 - `packages` — optional shared libraries (types, utilities) consumed by the apps.
 
 ## Getting Started
