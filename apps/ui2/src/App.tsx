@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import './App.css';
 import { useProjects } from './hooks/useProjects';
 import { useTasks } from './hooks/useTasks';
+import { useTheme } from './hooks/useTheme';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ProjectForm } from './components/ProjectForm';
 import { TaskBoard } from './components/TaskBoard';
@@ -12,10 +12,9 @@ import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
-import type { Project, Task, TaskPriority, TaskStatus } from './types';
+import type { Project, Task, TaskPriority, TaskStatus, TaskView } from './types';
 
 type ProjectFormMode = 'create' | 'edit' | null;
-type TaskView = 'board' | 'list';
 
 const UNKNOWN_ERROR = 'Unknown error';
 const EMPTY_STATUSES: TaskStatus[] = [];
@@ -119,6 +118,8 @@ function App() {
     updateTask,
     deleteTask,
   } = useTasks(selectedProjectId, activeStatuses);
+
+  const { theme, toggleTheme } = useTheme();
 
   const taskBeingEdited = useMemo(
     () =>
@@ -645,83 +646,113 @@ function App() {
         : false;
 
   return (
-    <div className="app">
-      <ProjectSidebar
-        projects={sortedProjects}
-        isLoading={projectsLoading}
-        error={projectsError}
-        selectedProjectId={selectedProjectId}
-        deletingProjectId={deletingProjectId}
-        onSelectProject={handleSelectProject}
-        onCreateProject={handleCreateRequest}
-        onEditProject={handleEditRequest}
-        onDeleteProject={handleDeleteRequest}
-      />
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100 lg:h-screen lg:flex-row lg:overflow-hidden">
+      <div className="flex-shrink-0 px-0 py-0 lg:min-h-screen lg:h-screen lg:w-80">
+        <div className="h-full">
+          <ProjectSidebar
+            projects={sortedProjects}
+            isLoading={projectsLoading}
+            error={projectsError}
+            selectedProjectId={selectedProjectId}
+            deletingProjectId={deletingProjectId}
+            onSelectProject={handleSelectProject}
+            onCreateProject={handleCreateRequest}
+            onEditProject={handleEditRequest}
+            onDeleteProject={handleDeleteRequest}
+          />
+        </div>
+      </div>
 
-      <main className="main">
+      <div className="flex flex-1 min-h-screen lg:h-screen flex-col gap-0 px-0 pb-0 overflow-hidden">
         <Topbar
           activeView={taskView}
           onSelectView={handleSelectView}
           onOpenCommandPalette={handleOpenCommandPalette}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
-        <section className="board">
-          <header className="board__header">
-            <h1>
-              {projectFormMode === 'create'
-                ? 'Create a project'
-                : selectedProject?.name ?? 'Select a project'}
-            </h1>
-            {projectFormMode !== 'create' && selectedProject?.description ? (
-              <p>{selectedProject.description}</p>
-            ) : null}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-none p-6 pt-0 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="panel-section-title">
+                {projectFormMode === 'create' ? 'New project' : 'Workspace overview'}
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                {projectFormMode === 'create'
+                  ? 'Create a project'
+                  : selectedProject?.name ?? 'Select a project'}
+              </h1>
+              {projectFormMode !== 'create' && selectedProject?.description ? (
+                <p className="max-w-2xl text-sm text-slate-600 dark:text-white/70">{selectedProject.description}</p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {projectFormMode === null && selectedProject ? (
+                <button
+                  type="button"
+                  onClick={handleOpenTaskModal}
+                  className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 dark:bg-white/10 dark:hover:bg-white/20"
+                >
+                  New task
+                </button>
+              ) : null}
+            </div>
           </header>
 
           {boardError && projectFormMode === null ? (
-            <div className="board__alert board__alert--error">{boardError}</div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-100">
+              {boardError}
+            </div>
           ) : null}
 
           {projectFormMode === null && !hasProject ? (
-            <div className="board__empty surface">Choose a project to view its tasks.</div>
+            <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
+              Choose a project to view its tasks.
+            </div>
           ) : null}
 
-          {projectFormMode === null && hasProject ? (
-            taskView === 'board' ? (
-              <TaskBoard
-                key={`${selectedProjectId ?? 'no-project'}-board`}
-                tasks={tasks}
-                statuses={activeStatuses}
-                labels={activeLabels}
-                isLoading={tasksLoading}
-                error={tasksError}
-                creatingStatus={creatingTaskStatus}
-                updatingTaskId={updatingTaskId}
-                deletingTaskId={deletingTaskId}
-                isUpdatingStatuses={isUpdatingSelectedProject}
-                onCreateTask={handleTaskCreate}
-                onUpdateTask={handleTaskUpdate}
-                onAddStatus={handleAddStatus}
-                onReorderStatuses={handleReorderStatuses}
-                onEditTask={handleTaskEditRequest}
-              />
-            ) : (
-              <TaskList
-                key={`${selectedProjectId ?? 'no-project'}-list`}
-                tasks={tasks}
-                statuses={activeStatuses}
-                labels={activeLabels}
-                isLoading={tasksLoading}
-                error={tasksError}
-                creatingStatus={creatingTaskStatus}
-                updatingTaskId={updatingTaskId}
-                deletingTaskId={deletingTaskId}
-                onCreateTask={handleTaskCreate}
-                onUpdateTask={handleTaskUpdate}
-                onEditTask={handleTaskEditRequest}
-              />
-            )
-          ) : null}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {projectFormMode === null && hasProject ? (
+              taskView === 'board' ? (
+                <TaskBoard
+                  key={`${selectedProjectId ?? 'no-project'}-board`}
+                  tasks={tasks}
+                  statuses={activeStatuses}
+                  labels={activeLabels}
+                  isLoading={tasksLoading}
+                  error={tasksError}
+                  creatingStatus={creatingTaskStatus}
+                  updatingTaskId={updatingTaskId}
+                  deletingTaskId={deletingTaskId}
+                  isUpdatingStatuses={isUpdatingSelectedProject}
+                  onCreateTask={handleTaskCreate}
+                  onUpdateTask={handleTaskUpdate}
+                  onAddStatus={handleAddStatus}
+                  onReorderStatuses={handleReorderStatuses}
+                  onEditTask={handleTaskEditRequest}
+                />
+              ) : (
+                <TaskList
+                  key={`${selectedProjectId ?? 'no-project'}-list`}
+                  tasks={tasks}
+                  statuses={activeStatuses}
+                  labels={activeLabels}
+                  isLoading={tasksLoading}
+                  error={tasksError}
+                  creatingStatus={creatingTaskStatus}
+                  updatingTaskId={updatingTaskId}
+                  deletingTaskId={deletingTaskId}
+                  onCreateTask={handleTaskCreate}
+                  onUpdateTask={handleTaskUpdate}
+                  onEditTask={handleTaskEditRequest}
+                />
+              )
+            ) : null}
+          </div>
         </section>
-      </main>
+        </div>
+      </div>
 
       <ConfirmDialog
         open={Boolean(pendingDeleteTask)}

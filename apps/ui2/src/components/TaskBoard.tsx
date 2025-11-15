@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
+import clsx from 'clsx';
 import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
+import { PRIORITY_COLOR_MAP } from '../constants/priorityColors';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
 import { TaskEditor } from './TaskEditor';
 
@@ -29,6 +31,20 @@ type TaskBoardProps = {
   onAddStatus: (status: string) => Promise<void>;
   onReorderStatuses: (statuses: readonly TaskStatus[]) => Promise<void>;
   onEditTask: (taskId: string) => void;
+};
+
+const isPastDue = (dueDate?: string | null) => {
+  if (!dueDate) {
+    return false;
+  }
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) {
+    return false;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
 };
 
 export const TaskBoard = ({
@@ -458,7 +474,10 @@ export const TaskBoard = ({
 
   return (
     <div
-      className={`board__columns${isColumnsScrolling ? ' board__columns--scrolling' : ''}`}
+      className={clsx(
+        'flex h-full min-h-0 w-full gap-4 overflow-x-auto overflow-y-hidden pr-2',
+        isColumnsScrolling && 'snap-x',
+      )}
       ref={columnsRef}
     >
       {statusOptions.map((column) => {
@@ -477,48 +496,60 @@ export const TaskBoard = ({
 
         return (
           <div
-            className={`board__column surface${
-              isDragTarget ? ' board__column--droppable' : ''
-            }${isColumnDragTarget ? ' board__column--sortable-target' : ''}${
-              isColumnDragging ? ' board__column--dragging' : ''
-            }`}
             key={column.key}
+            className={clsx(
+              'flex h-full min-h-0 max-h-full w-[320px] min-w-[280px] flex-shrink-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 ring-1 ring-slate-100 shadow-none transition-shadow dark:border-white/10 dark:bg-white/5 dark:ring-white/10',
+              isDragTarget
+                ? 'border-slate-400 ring-slate-200 shadow-soft dark:border-white/50 dark:ring-white/40 dark:shadow-card'
+                : 'hover:shadow-soft dark:hover:shadow-card',
+              isColumnDragTarget && 'ring-2 ring-slate-300 dark:ring-white/40',
+              isColumnDragging && 'opacity-70',
+            )}
             onDragOver={(event) => handleStatusDragOver(event, column.key)}
             onDragEnter={(event) => handleStatusDragOver(event, column.key)}
             onDragLeave={(event) => handleStatusDragLeave(event, column.key)}
             onDrop={(event) => handleStatusDrop(event, column.key)}
           >
             <div
-              className={`board__column-header${isSortable ? ' board__column-header--draggable' : ''}`}
+              className={clsx(
+                'flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 dark:border-white/5 dark:bg-white/10 dark:text-white',
+                isSortable && !draggingTaskId && !isUpdatingStatuses ? 'cursor-grab active:cursor-grabbing' : '',
+              )}
               draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
               onDragStart={(event) => handleStatusDragStart(event, column.key)}
               onDragEnd={handleStatusDragEnd}
               data-column-drag-handle={isSortable ? 'true' : undefined}
             >
-              <h2>{column.label}</h2>
-              <div className="board__column-actions">
-                <span className="board__count">{columnTasks.length}</span>
-                {isSortable ? (
-                  <button
-                    type="button"
-                    className="board__column-drag"
-                    aria-label={`Reorder ${column.label} column`}
-                    draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
-                    onDragStart={(event) => handleStatusDragStart(event, column.key)}
-                    onDragEnd={handleStatusDragEnd}
-                    >
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M7 10h10v2H7v-2Zm0-4h10v2H7V6Zm0 8h10v2H7v-2Zm0 4h10v2H7v-2Z"
-                      />
-                    </svg>
-                  </button>
-                ) : null}
+              <div className="flex items-center gap-2">
+                <span>{column.label}</span>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white">
+                  {columnTasks.length}
+                </span>
               </div>
+              {isSortable ? (
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
+                  aria-label={`Reorder ${column.label} column`}
+                  draggable={isSortable && !draggingTaskId && !isUpdatingStatuses}
+                  onDragStart={(event) => handleStatusDragStart(event, column.key)}
+                  onDragEnd={handleStatusDragEnd}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+                    <path
+                      fill="currentColor"
+                      d="M7 10h10v2H7v-2Zm0-4h10v2H7V6Zm0 8h10v2H7v-2Zm0 4h10v2H7v-2Z"
+                    />
+                  </svg>
+                </button>
+              ) : null}
             </div>
             <div
-              className="board__cards"
+              className={clsx(
+                'flex flex-1 min-h-0 max-h-full flex-col gap-3 overflow-y-auto pr-1 pt-4',
+                isDragTarget &&
+                  'rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 dark:border-white/30 dark:bg-white/5',
+              )}
               onDragOver={(event) => handleColumnDragOver(event, column.key)}
               onDragEnter={(event) => handleColumnDragOver(event, column.key)}
               onDragLeave={(event) => handleColumnDragLeave(event, column.key)}
@@ -535,36 +566,77 @@ export const TaskBoard = ({
                   onCancel={() => setActiveCreateStatus(null)}
                 />
               ) : null}
-              {showLoadingState ? <div className="board__placeholder">Loading…</div> : null}
+              {showLoadingState ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
+                  Loading…
+                </div>
+              ) : null}
               {showErrorState ? (
-                <div className="board__placeholder board__placeholder--error">{error}</div>
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
+                  {error}
+                </div>
               ) : null}
               {showEmptyState ? (
-                <div className="board__placeholder board__placeholder--muted">No tasks yet.</div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+                  No tasks yet.
+                </div>
               ) : null}
               {columnTasks.map((task) => (
                 <article
                   key={task.taskId}
-                  className={`task-card surface${
-                    draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
-                  }`}
+                  className={clsx(
+                    'rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10',
+                    draggingTaskId === task.taskId
+                      ? 'cursor-grabbing opacity-60'
+                      : 'cursor-grab active:cursor-grabbing',
+                    updatingTaskId === task.taskId && 'ring-2 ring-indigo-400/60',
+                    deletingTaskId === task.taskId && 'opacity-40',
+                  )}
                   draggable
                   onDragStart={(event) => handleDragStart(event, task.taskId)}
                   onDragEnd={handleDragEnd}
                   aria-grabbed={draggingTaskId === task.taskId}
-                >
-                  <header>
-                    <h3>{task.name}</h3>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${task.name}`}
-                      onClick={() => {
-                        setActiveCreateStatus(null);
-                        onEditTask(task.taskId);
-                      }}
-                      disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                  >
+                    <header className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                          {isPastDue(task.dueDate) ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-rose-500 dark:text-rose-300" title="Task is past due">
+                              <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                className="h-3.5 w-3.5"
+                                fill="currentColor"
+                              >
+                                <path d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm0 20a9 9 0 1 1 9-9 9.01 9.01 0 0 1-9 9Zm.5-9.914V7h-2v5.5l4.5 2.7 1-1.73Z" />
+                              </svg>
+                              Due
+                            </span>
+                          ) : null}
+                        </div>
+                        {task.priority !== 'None' ? (
+                          <span
+                            className={clsx(
+                              'text-xs font-semibold uppercase tracking-wide',
+                              PRIORITY_COLOR_MAP[task.priority],
+                            )}
+                          >
+                            {task.priority}
+                          </span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${task.name}`}
+                        onClick={() => {
+                          setActiveCreateStatus(null);
+                          onEditTask(task.taskId);
+                        }}
+                        disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-40 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
+                      >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                         <path
                           fill="currentColor"
                           d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
@@ -572,29 +644,36 @@ export const TaskBoard = ({
                       </svg>
                     </button>
                   </header>
-                  {task.labels.length ? (
-                    <div className="task-card__labels">
-                      {task.labels.map((label) => (
-                        <span key={`${task.taskId}-label-${label.toLowerCase()}`} className="task-card__label">
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {task.description ? <p>{task.description}</p> : null}
+                    {task.labels.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {task.labels.map((label) => (
+                          <span
+                            key={`${task.taskId}-label-${label.toLowerCase()}`}
+                            className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white"
+                          >
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {task.description ? (
+                      <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{task.description}</p>
+                    ) : null}
                 </article>
               ))}
             </div>
             {activeCreateStatus === column.key ? null : (
               <button
                 type="button"
-                className="board__add-task btn"
+                className="mt-4 inline-flex items-center justify-center rounded-2xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
                 onClick={() => {
                   setActiveCreateStatus(column.key);
                 }}
                 disabled={Boolean(creatingStatus)}
               >
-                <span aria-hidden="true">+</span>
+                <span aria-hidden="true" className="mr-1 text-lg">
+                  +
+                </span>
                 Add Task
               </button>
             )}
@@ -602,16 +681,17 @@ export const TaskBoard = ({
         );
       })}
       <div
-        className={`board__column surface board__column--add-status${
-          isDragOverAddColumn ? ' board__column--add-status-target' : ''
-        }`}
+        className={clsx(
+          'flex w-[320px] min-w-[280px] flex-shrink-0 flex-col rounded-3xl border border-dashed border-slate-300 bg-white p-4 text-slate-600 transition hover:border-slate-400 dark:border-white/20 dark:bg-white/0 dark:text-white/70 dark:hover:border-white/40',
+          isDragOverAddColumn && 'border-slate-500 bg-slate-50 dark:border-white/60 dark:bg-white/5',
+        )}
         onDragOver={handleStatusDragEnterAddColumn}
         onDragEnter={handleStatusDragEnterAddColumn}
         onDragLeave={handleStatusDragLeaveAddColumn}
         onDrop={handleStatusDropOnAddColumn}
       >
         {isAddingStatus ? (
-          <form className="board__add-status-form" onSubmit={handleAddStatusSubmit}>
+          <form className="space-y-3" onSubmit={handleAddStatusSubmit}>
             <input
               type="text"
               value={newStatusName}
@@ -624,22 +704,26 @@ export const TaskBoard = ({
               placeholder="Status name"
               aria-label="Status name"
               disabled={isUpdatingStatuses}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40"
             />
             {addStatusError ? (
-              <div className="board__add-status-error" role="alert">
+              <div
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-100"
+                role="alert"
+              >
                 {addStatusError}
               </div>
             ) : null}
-            <div className="board__add-status-actions">
+            <div className="flex flex-wrap gap-3">
               <button
-                className="btn btn-primary"
+                className="inline-flex flex-1 items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-white/10 dark:hover:bg-white/20"
                 type="submit"
                 disabled={isUpdatingStatuses || !newStatusName.trim()}
               >
                 {isUpdatingStatuses ? 'Saving…' : 'Save'}
               </button>
               <button
-                className="btn btn-secondary"
+                className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
                 type="button"
                 onClick={handleCancelAddStatus}
                 disabled={isUpdatingStatuses}
@@ -651,11 +735,13 @@ export const TaskBoard = ({
         ) : (
           <button
             type="button"
-            className="board__add-status-trigger"
+            className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-3 py-6 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
             onClick={handleStartAddStatus}
             disabled={isUpdatingStatuses}
           >
-            <span aria-hidden="true">+</span>
+            <span aria-hidden="true" className="text-2xl">
+              +
+            </span>
             Add status
           </button>
         )}

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
+import clsx from 'clsx';
 import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from '../constants/taskStatusOptions';
+import { PRIORITY_COLOR_MAP } from '../constants/priorityColors';
 import { TaskEditor } from './TaskEditor';
 
 type TaskEditorValues = {
@@ -26,6 +28,20 @@ type TaskListProps = {
   onCreateTask: (values: TaskEditorValues) => Promise<void>;
   onUpdateTask: (taskId: string, values: TaskEditorValues) => Promise<void>;
   onEditTask: (taskId: string) => void;
+};
+
+const isPastDue = (dueDate?: string | null) => {
+  if (!dueDate) {
+    return false;
+  }
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) {
+    return false;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
 };
 
 export const TaskList = ({
@@ -180,7 +196,7 @@ export const TaskList = ({
   );
 
   return (
-    <div className="list-view">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto space-y-6 pr-1">
       {statusOptions.map((statusOption) => {
         const statusTasks = tasksByStatus[statusOption.key] ?? [];
         const showLoading = isLoading && statusTasks.length === 0;
@@ -190,30 +206,40 @@ export const TaskList = ({
 
         return (
           <section
-            className={`list-view__section surface${isDragTarget ? ' list-view__section--droppable' : ''}`}
+        className={clsx(
+          'rounded-3xl border border-slate-200 bg-white p-5 ring-1 ring-slate-100 shadow-none transition-shadow hover:shadow-soft dark:border-white/10 dark:bg-white/5 dark:ring-white/10 dark:hover:shadow-card',
+          isDragTarget && 'border-slate-400 ring-slate-200 shadow-soft dark:border-white/40 dark:ring-white/30 dark:shadow-card',
+        )}
             key={statusOption.key}
           >
-            <header className="list-view__section-header">
-              <div className="list-view__section-title">
-                <h2>{statusOption.label}</h2>
-                <span className="list-view__count">{statusTasks.length}</span>
+            <header className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{statusOption.label}</h2>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white">
+                  {statusTasks.length}
+                </span>
               </div>
               {activeCreateStatus === statusOption.key ? null : (
                 <button
                   type="button"
-                  className="list-view__add btn"
+                  className="inline-flex items-center rounded-2xl border border-dashed border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60 dark:border-white/20 dark:text-white/80 dark:hover:border-white/40 dark:hover:text-white"
                   onClick={() => {
                     setActiveCreateStatus(statusOption.key);
                   }}
                   disabled={Boolean(creatingStatus)}
                 >
-                  <span aria-hidden="true">+</span>
+                  <span aria-hidden="true" className="mr-1 text-lg">
+                    +
+                  </span>
                   Add Task
                 </button>
               )}
             </header>
             <div
-              className={`list-view__body${isDragTarget ? ' list-view__body--droppable' : ''}`}
+              className={clsx(
+                'mt-4 flex flex-col gap-3',
+                isDragTarget && 'rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 dark:border-white/30 dark:bg-white/5',
+              )}
               onDragOver={(event) => handleSectionDragOver(event, statusOption.key)}
               onDragEnter={(event) => handleSectionDragOver(event, statusOption.key)}
               onDragLeave={(event) => handleSectionDragLeave(event, statusOption.key)}
@@ -231,25 +257,67 @@ export const TaskList = ({
                 />
               ) : null}
 
-              {showLoading ? <div className="list-view__placeholder">Loading…</div> : null}
-              {showError ? <div className="list-view__placeholder list-view__placeholder--error">{error}</div> : null}
+              {showLoading ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/60">
+                  Loading…
+                </div>
+              ) : null}
+              {showError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-center text-sm text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-100">
+                  {error}
+                </div>
+              ) : null}
               {showEmpty ? (
-                <div className="list-view__placeholder list-view__placeholder--muted">No tasks yet.</div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-white/50">
+                  No tasks yet.
+                </div>
               ) : null}
 
               {statusTasks.map((task) => (
                 <article
-                  className={`task-card surface task-card--list${
-                    draggingTaskId === task.taskId ? ' task-card--dragging' : ' task-card--draggable'
-                  }`}
+                  className={clsx(
+                    'rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10',
+                    draggingTaskId === task.taskId
+                      ? 'cursor-grabbing opacity-60'
+                      : 'cursor-grab active:cursor-grabbing',
+                    updatingTaskId === task.taskId && 'ring-2 ring-indigo-400/60',
+                    deletingTaskId === task.taskId && 'opacity-40',
+                  )}
                   key={task.taskId}
                   draggable
                   onDragStart={(event) => handleDragStart(event, task.taskId)}
                   onDragEnd={handleDragEnd}
                   aria-grabbed={draggingTaskId === task.taskId}
                 >
-                  <header>
-                    <h3>{task.name}</h3>
+                  <header className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-white">{task.name}</h3>
+                        {isPastDue(task.dueDate) ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-rose-500 dark:text-rose-300" title="Task is past due">
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="currentColor"
+                            >
+                              <path d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1Zm0 20a9 9 0 1 1 9-9 9.01 9.01 0 0 1-9 9Zm.5-9.914V7h-2v5.5l4.5 2.7 1-1.73Z" />
+                            </svg>
+                            Due
+                          </span>
+                        ) : null}
+                      </div>
+                      {task.priority !== 'None' ? (
+                        <span
+                          className={clsx(
+                            'text-xs font-semibold uppercase tracking-wide',
+                            PRIORITY_COLOR_MAP[task.priority],
+                          )}
+                        >
+                          {task.priority}
+                        </span>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       aria-label={`Edit ${task.name}`}
@@ -258,8 +326,9 @@ export const TaskList = ({
                         onEditTask(task.taskId);
                       }}
                       disabled={updatingTaskId === task.taskId || deletingTaskId === task.taskId}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-40 dark:border-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
                         <path
                           fill="currentColor"
                           d="M3 17.25V21h3.75l11-11.06-3.75-3.75L3 17.25ZM20.71 7a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.82 1.82 3.75 3.75L20.71 7Z"
@@ -268,15 +337,20 @@ export const TaskList = ({
                     </button>
                   </header>
                   {task.labels.length ? (
-                    <div className="task-card__labels">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {task.labels.map((label) => (
-                        <span key={`${task.taskId}-label-${label.toLowerCase()}`} className="task-card__label">
+                        <span
+                          key={`${task.taskId}-label-${label.toLowerCase()}`}
+                          className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-white"
+                        >
                           {label}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  {task.description ? <p>{task.description}</p> : null}
+                  {task.description ? (
+                    <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{task.description}</p>
+                  ) : null}
                 </article>
               ))}
             </div>

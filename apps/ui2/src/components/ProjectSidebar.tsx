@@ -53,31 +53,35 @@ export const ProjectSidebar = ({
   );
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar__header">
-        <span className="sidebar__logo">Collab</span>
+    <aside className="glass-panel flex h-full max-h-full flex-col gap-6 overflow-hidden rounded-none p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="panel-section-title">Workspace</p>
+          <p className="text-2xl font-semibold text-slate-900 dark:text-white">Collab</p>
+        </div>
+        <button
+          type="button"
+          onClick={onCreateProject}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-300 text-lg font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 dark:border-white/20 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10"
+          aria-label="Create project"
+        >
+          +
+        </button>
       </div>
 
-      <div className="sidebar__section">
-        <div className="sidebar__section-header">
-          <span className="sidebar__section-title">
-            Projects
-            {projectCountLabel && <span className="sidebar__section-count">({projectCountLabel})</span>}
-          </span>
-          <button
-            type="button"
-            className="sidebar__section-add"
-            onClick={onCreateProject}
-            aria-label="Create project"
-          >
-            <span aria-hidden="true">+</span>
-            <span className="sr-only">Create project</span>
-          </button>
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.4em] text-slate-500 dark:text-white/60">
+          <span>Projects</span>
+          {projectCountLabel ? (
+            <span className="text-[0.7rem] text-slate-400 dark:text-white/40">{projectCountLabel}</span>
+          ) : null}
         </div>
-        {metaLabel && (
-          <p className={error ? 'sidebar__meta sidebar__meta--error' : 'sidebar__meta'}>{metaLabel}</p>
-        )}
-        <ul className="sidebar__list">
+        {metaLabel ? (
+          <p className={error ? 'text-sm text-rose-500 dark:text-rose-300' : 'text-sm text-slate-600 dark:text-white/70'}>
+            {metaLabel}
+          </p>
+        ) : null}
+        <ul className="space-y-3">
           {projects.map((project) => (
             <ProjectSidebarItem
               key={project.id}

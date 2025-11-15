@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans text-slate-900 antialiased;
+  }
+
+  .dark body {
+    @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  select {
+    color-scheme: light;
+    @apply bg-white text-slate-900;
+  }
+
+  select option {
+    @apply bg-white text-slate-900;
+  }
+
+  .dark select {
+    color-scheme: dark;
+    @apply bg-slate-900 text-white;
+  }
+
+  .dark select option {
+    @apply bg-slate-900 text-white;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-3xl border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur-xl dark:border-white/5 dark:bg-white/5 dark:shadow-card;
+  }
+
+  .panel-section-title {
+    @apply text-xs font-semibold uppercase tracking-[0.3em] text-slate-500;
+  }
+
+  .dark .panel-section-title {
+    @apply text-white/60;
+  }
+}
