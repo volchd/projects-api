@@ -15,6 +15,8 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  confirmRegistration: (email: string, code: string) => Promise<void>;
+  resendConfirmationCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -133,6 +135,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const confirmRegistration = useCallback(
+    (email: string, code: string) =>
+      new Promise<void>((resolve, reject) => {
+        const cognitoUser = new CognitoUser({
+          Username: email,
+          Pool: userPool,
+        });
+
+        cognitoUser.confirmRegistration(code, true, (err?: Error | null) => {
+          if (err) {
+            const message = err.message || 'Failed to confirm account';
+            reject(new Error(message));
+            return;
+          }
+
+          resolve();
+        });
+      }),
+    [],
+  );
+
+  const resendConfirmationCode = useCallback(
+    (email: string) =>
+      new Promise<void>((resolve, reject) => {
+        const cognitoUser = new CognitoUser({
+          Username: email,
+          Pool: userPool,
+        });
+
+        cognitoUser.resendConfirmationCode((err?: Error | null) => {
+          if (err) {
+            const message = err.message || 'Failed to resend code';
+            reject(new Error(message));
+            return;
+          }
+
+          resolve();
+        });
+      }),
+    [],
+  );
+
   const logout = useCallback(async () => {
     const existing = userPool.getCurrentUser();
     if (existing) {
@@ -147,9 +191,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       login,
       register,
+      confirmRegistration,
+      resendConfirmationCode,
       logout,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, confirmRegistration, resendConfirmationCode, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
