@@ -22,6 +22,11 @@ type UseTasksState = {
   deletingTaskId: string | null;
 };
 
+/**
+ * Manages the lifecycle of tasks for the currently-selected project. It guards all mutations
+ * behind `ensureProject` so no network request fires without a project context, and exposes
+ * narrow loading flags for granular UI feedback.
+ */
 export const useTasks = (projectId: string | null, statuses: readonly TaskStatus[]) => {
   const [state, setState] = useState<UseTasksState>({
     tasks: [],
