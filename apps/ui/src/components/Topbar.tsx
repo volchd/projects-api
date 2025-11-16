@@ -6,6 +6,24 @@ type TopbarProps = {
   onOpenCommandPalette: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  userLabel?: string;
+  onSignOut?: () => void;
+};
+
+const initialsFromLabel = (value?: string) => {
+  if (!value) {
+    return '??';
+  }
+  const parts = value
+    .trim()
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase());
+  if (parts.length === 0) {
+    return value.slice(0, 2).toUpperCase();
+  }
+  return parts.join('');
 };
 
 const TAB_OPTIONS = [
@@ -47,7 +65,18 @@ const TAB_OPTIONS = [
   },
 ] as const;
 
-export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette, theme, onToggleTheme }: TopbarProps) => (
+export const Topbar = ({
+  activeView,
+  onSelectView,
+  onOpenCommandPalette,
+  theme,
+  onToggleTheme,
+  userLabel,
+  onSignOut,
+}: TopbarProps) => {
+  const userInitials = initialsFromLabel(userLabel);
+
+  return (
   <header className="glass-panel flex flex-col gap-4 rounded-none p-4 shadow-none ring-1 ring-slate-100 dark:ring-white/10 lg:flex-row lg:items-center lg:gap-6">
     <div className="w-full flex-1">
       <label htmlFor="task-search" className="sr-only">
@@ -144,19 +173,31 @@ export const Topbar = ({ activeView, onSelectView, onOpenCommandPalette, theme, 
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
           <path
             fill="currentColor"
-            d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 0 0-4-5.65V4a2 2 0 0 0-4 0v1.35A6 6 0 0 0 6 11v5l-2 2v1h16v-1Z"
-          />
-        </svg>
+          d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 0 0-4-5.65V4a2 2 0 0 0-4 0v1.35A6 6 0 0 0 6 11v5l-2 2v1h16v-1Z"
+        />
+      </svg>
       </button>
-      <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1 dark:border-white/10 dark:bg-white/5">
-        <div className="text-sm font-semibold text-slate-700 dark:text-white/80">Invite</div>
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-sm font-semibold text-white shadow-lg"
-        >
-          AC
-        </button>
-      </div>
+      {onSignOut ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white dark:bg-white/20 dark:text-slate-900">
+            {userInitials}
+          </div>
+          <div className="min-w-[120px]">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-white/50">
+              Signed in as
+            </p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{userLabel ?? 'Account'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
     </div>
   </header>
-);
+  );
+};

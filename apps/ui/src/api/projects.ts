@@ -1,10 +1,12 @@
-import { apiUrl, parseError } from './client';
+import { apiUrl, parseError, withAuthHeaders } from './client';
 import type { Project } from '../types';
 
 export type ProjectPayload = { name: string; description: string | null };
 
 export const fetchProjects = async (): Promise<Project[]> => {
-  const response = await fetch(apiUrl('/projects'));
+  const response = await fetch(apiUrl('/projects'), {
+    headers: withAuthHeaders(),
+  });
   if (!response.ok) {
     await parseError(response, `Failed to load projects (${response.status})`);
   }
@@ -16,7 +18,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
 export const createProject = async (payload: ProjectPayload) => {
   const response = await fetch(apiUrl('/projects'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -31,7 +33,7 @@ export const createProject = async (payload: ProjectPayload) => {
 export const updateProject = async (projectId: string, payload: ProjectPayload) => {
   const response = await fetch(apiUrl(`/projects/${projectId}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -45,6 +47,7 @@ export const updateProject = async (projectId: string, payload: ProjectPayload) 
 export const deleteProject = async (projectId: string) => {
   const response = await fetch(apiUrl(`/projects/${projectId}`), {
     method: 'DELETE',
+    headers: withAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -55,7 +58,7 @@ export const deleteProject = async (projectId: string) => {
 export const updateProjectStatuses = async (projectId: string, statuses: string[]) => {
   const response = await fetch(apiUrl(`/projects/${projectId}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ statuses }),
   });
 

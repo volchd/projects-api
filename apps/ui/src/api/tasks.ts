@@ -1,4 +1,4 @@
-import { apiUrl, parseError } from './client';
+import { apiUrl, parseError, withAuthHeaders } from './client';
 import type { Task, TaskLabel, TaskPriority, TaskStatus } from '../types';
 
 export type CreateTaskPayload = {
@@ -22,7 +22,9 @@ export type UpdateTaskPayload = {
 };
 
 export const fetchTasks = async (projectId: string): Promise<Task[]> => {
-  const response = await fetch(apiUrl(`/projects/${projectId}/tasks`));
+  const response = await fetch(apiUrl(`/projects/${projectId}/tasks`), {
+    headers: withAuthHeaders(),
+  });
   if (!response.ok) {
     await parseError(response, `Failed to load tasks (${response.status})`);
   }
@@ -34,7 +36,7 @@ export const fetchTasks = async (projectId: string): Promise<Task[]> => {
 export const createTask = async (projectId: string, payload: CreateTaskPayload) => {
   const response = await fetch(apiUrl(`/projects/${projectId}/tasks`), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       name: payload.name,
       description: payload.description,
@@ -60,7 +62,7 @@ export const updateTask = async (
 ) => {
   const response = await fetch(apiUrl(`/projects/${projectId}/tasks/${taskId}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -74,6 +76,7 @@ export const updateTask = async (
 export const deleteTask = async (projectId: string, taskId: string) => {
   const response = await fetch(apiUrl(`/projects/${projectId}/tasks/${taskId}`), {
     method: 'DELETE',
+    headers: withAuthHeaders(),
   });
 
   if (!response.ok) {
