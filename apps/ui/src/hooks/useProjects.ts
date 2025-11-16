@@ -20,6 +20,10 @@ type UseProjectsState = {
 
 const UNKNOWN_ERROR = 'Unknown error';
 
+/**
+ * Centralized data source for project CRUD operations plus the derived loading/error flags
+ * used throughout the app shell. Keeps network logic decoupled from presentation components.
+ */
 export const useProjects = () => {
   const [state, setState] = useState<UseProjectsState>({
     projects: [],

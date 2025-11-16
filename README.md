@@ -27,6 +27,12 @@ Both commands can also be executed from within their workspaces via `npm install
 
 > Tip: `npm run dev` will invoke any `dev` scripts that exist across all workspaces, but it runs them sequentially. Prefer the explicit `dev:*` commands above when you need both servers at the same time.
 
+## Documentation
+- [Architecture overview](docs/architecture.md) — how the API, UI, and DynamoDB table fit together.
+- [Backend reference](docs/backend.md) — handler behavior, validation rules, and deployment tips.
+- [Frontend reference](docs/frontend.md) — React structure, hooks, and UI workflows.
+- [API reference](docs/api-reference.md) — request/response schemas for every endpoint.
+
 ## Useful Commands
 - `npm run build:api` / `npm run build:ui` — build just one surface.
 - `npm run build` — build every workspace.

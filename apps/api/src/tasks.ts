@@ -468,6 +468,10 @@ const loadProjectForUser = async (
   };
 };
 
+/**
+ * Persists any new labels discovered on tasks back onto the parent project
+ * so UI filters remain aware of the expanded vocabulary.
+ */
 const ensureProjectLabels = async (
   projectId: string,
   userId: string,
@@ -567,6 +571,10 @@ const toTaskLabels = (value: unknown): TaskLabel[] => {
   return labels;
 };
 
+/**
+ * Converts a raw DynamoDB item back into the public Task contract,
+ * coercing undefined/legacy data into safe defaults.
+ */
 const toTask = (item: Record<string, unknown> | undefined): Task | undefined => {
   if (!item) {
     return undefined;
@@ -624,6 +632,7 @@ export const create = async (
     const dueDate = value.dueDate ?? null;
     const labels = value.labels ?? [];
 
+    // Tasks cannot enter a status column that the parent project does not recognize.
     if (!projectStatuses.includes(targetStatus)) {
       return json(400, {
         errors: ['status must match one of the project statuses'],
@@ -796,6 +805,7 @@ export const update = async (
       await ensureProjectLabels(projectId, userId, projectLabels, labelsForUpdate ?? []);
     }
 
+    // Only set attributes that were provided by the client to avoid clobbering other fields.
     const names: string[] = [];
     const exprNames: Record<string, string> = {};
     const exprValues: Record<string, NativeAttributeValue> = {

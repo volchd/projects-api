@@ -69,6 +69,10 @@ const normalizeStatus = (status: unknown): ProjectStatus | null => {
   return collapsed.toUpperCase();
 };
 
+/**
+ * Ensures persisted statuses always contain at least the default workflow
+ * and stay deduped, even if legacy data sneaks in with weird casing.
+ */
 const ensureStatuses = (value: unknown): ProjectStatus[] => {
   if (!Array.isArray(value)) {
     return [...DEFAULT_PROJECT_STATUSES];
@@ -113,6 +117,9 @@ const normalizeLabel = (label: unknown): ProjectLabel | null => {
   return collapsed;
 };
 
+/**
+ * Normalizes persisted label arrays so reads never surface undefined/duplicate values.
+ */
 const ensureLabels = (value: unknown): ProjectLabel[] => {
   if (!Array.isArray(value)) {
     return [];
@@ -138,6 +145,10 @@ const ensureLabels = (value: unknown): ProjectLabel[] => {
   return labels;
 };
 
+/**
+ * Validates the labels array supplied by clients. Invalid data appends human-friendly
+ * errors instead of throwing to keep API responses predictable.
+ */
 const parseLabelsInput = (value: unknown, errors: string[]): ProjectLabel[] | undefined => {
   if (value === undefined) {
     return undefined;
@@ -180,6 +191,10 @@ const parseLabelsInput = (value: unknown, errors: string[]): ProjectLabel[] | un
   return labels;
 };
 
+/**
+ * Ensures client-supplied statuses match the same normalization as reads/writes
+ * and captures all validation issues at once.
+ */
 const parseStatusesInput = (value: unknown, errors: string[]): ProjectStatus[] | undefined => {
   if (value === undefined) {
     return undefined;
@@ -226,6 +241,10 @@ const parseStatusesInput = (value: unknown, errors: string[]): ProjectStatus[] |
   return statuses;
 };
 
+/**
+ * Converts an arbitrary request body into a typed payload plus validation errors.
+ * Returning both allows handlers to reuse the same helper for user-friendly responses.
+ */
 function parseCreatePayload(payload: unknown): ValidationResult<CreateProjectPayload> {
   const errors: string[] = [];
 
@@ -371,6 +390,11 @@ const loadProject = async (id: string): Promise<Record<string, unknown> | undefi
   return res.Item as Record<string, unknown> | undefined;
 };
 
+/**
+ * Deletes every task under the provided project partition by scanning through the
+ * sort key prefix in small batches. This keeps project deletes consistent without
+ * requiring DynamoDB transactions or archive tables.
+ */
 const deleteProjectTasks = async (pk: string): Promise<void> => {
   let exclusiveStartKey: Record<string, NativeAttributeValue> | undefined;
 
@@ -524,6 +548,7 @@ export const update = async (
       return json(400, { errors });
     }
 
+    // Build a dynamic UpdateExpression so we only overwrite fields supplied by the caller.
     const names: string[] = [];
     const exprNames: Record<string, string> = {};
     const exprValues: Record<string, NativeAttributeValue> = {};
