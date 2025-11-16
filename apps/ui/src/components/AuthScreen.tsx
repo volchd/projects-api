@@ -82,7 +82,14 @@ export const AuthScreen = () => {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to complete request.';
-      setError(message);
+      const normalized = message.toLowerCase();
+      if (mode === 'login' && normalized.includes('not confirmed')) {
+        setError(null);
+        setStatusMessage('You need to verify your email before signing in. Enter the code we sent you.');
+        resetForMode('confirm', { preserveEmail: true, preserveFeedback: true });
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -258,6 +265,18 @@ export const AuthScreen = () => {
             </button>
           )}
         </p>
+        {mode !== 'confirm' ? (
+          <p className="text-center text-sm text-slate-500 dark:text-slate-300">
+            Already registered but still need to verify your email?{' '}
+            <button
+              type="button"
+              className="font-semibold text-indigo-600 dark:text-indigo-400"
+              onClick={() => resetForMode('confirm', { preserveEmail: true })}
+            >
+              Enter your code
+            </button>
+          </p>
+        ) : null}
       </div>
     </div>
   );
