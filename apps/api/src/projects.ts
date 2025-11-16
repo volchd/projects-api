@@ -11,7 +11,7 @@ import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda';
-import { resolveUserId } from './auth';
+import { resolveUserId, UnauthorizedError } from './auth';
 import { ddbDocClient } from './dynamodb';
 import {
   GSI1_NAME,
@@ -43,6 +43,24 @@ const TABLE_NAME = (() => {
   }
   return value;
 })();
+
+type AuthResult =
+  | { ok: true; userId: string }
+  | { ok: false; response: APIGatewayProxyStructuredResultV2 };
+
+const authenticateRequest = async (
+  event: APIGatewayProxyEventV2,
+): Promise<AuthResult> => {
+  try {
+    const userId = await resolveUserId(event);
+    return { ok: true, userId };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return { ok: false, response: json(401, { message: 'Unauthorized' }) };
+    }
+    throw error;
+  }
+};
 
 const toStringOrNull = (value: unknown): string | null | undefined => {
   if (value == null) {
@@ -422,7 +440,11 @@ export const create = async (
       return json(400, { errors });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
     const projectId = randomUUID();
     const statuses = value.statuses ?? [...DEFAULT_PROJECT_STATUSES];
     const labels = value.labels ?? [];
@@ -484,7 +506,11 @@ export const listByUser = async (
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyStructuredResultV2> => {
   try {
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
 
     const res = await ddbDocClient.send(
       new QueryCommand({

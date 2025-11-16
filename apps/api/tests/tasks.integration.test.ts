@@ -16,7 +16,6 @@ import {
   it,
   vi,
 } from 'vitest';
-import { resolveUserId } from '../src/auth';
 import {
   create as createProjectHandler,
   get as getProjectHandler,
@@ -41,6 +40,14 @@ vi.hoisted(() => {
   process.env.TABLE_NAME = `TasksTableTest-${Date.now()}`;
 });
 
+vi.mock('../src/auth', () => {
+  class UnauthorizedError extends Error {}
+  return {
+    resolveUserId: vi.fn().mockResolvedValue('integration-user'),
+    UnauthorizedError,
+  };
+});
+
 const tableName = process.env.TABLE_NAME as string;
 let tableCreated = false;
 
@@ -60,7 +67,7 @@ const baseEvent = (
 const parseBody = <T>(responseBody: string | undefined): T =>
   JSON.parse(responseBody ?? '{}') as T;
 
-const hardcodedUserId = resolveUserId(baseEvent());
+const hardcodedUserId = 'integration-user';
 
 interface ProjectRecord {
   id: string;
