@@ -94,6 +94,9 @@ This test provisions a throwaway table in the local instance, exercises the full
 - `PUT    /projects/{projectId}/tasks/{taskId}` — update task fields (name, description, status, priority, start/due dates)
 - `DELETE /projects/{projectId}/tasks/{taskId}` — delete a task
 
+## Authentication
+Every request must include an `Authorization: Bearer <idToken>` header. The token is verified against the Cognito user pool configured through the `COGNITO_USER_POOL_ID` and `COGNITO_USER_POOL_CLIENT_ID` environment variables (defaults match the web app's pool). The backend automatically derives the authenticated user's id from the token claims and scopes reads/writes to that user.
+
 ## Example Requests
 Create:
 ```bash

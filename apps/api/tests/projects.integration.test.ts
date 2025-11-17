@@ -22,7 +22,6 @@ import {
   get as getTask,
   listByProject as listTasksByProject,
 } from '../src/tasks';
-import { resolveUserId } from '../src/auth';
 import { ddbDocClient } from '../src/dynamodb';
 import { DEFAULT_PROJECT_STATUSES } from '../src/projects.types';
 
@@ -31,6 +30,14 @@ vi.hoisted(() => {
   process.env.AWS_REGION = 'us-east-1';
   process.env.DYNAMODB_ENDPOINT = 'http://127.0.0.1:8000';
   process.env.TABLE_NAME = `ProjectsTableTest-${Date.now()}`;
+});
+
+vi.mock('../src/auth', () => {
+  class UnauthorizedError extends Error {}
+  return {
+    resolveUserId: vi.fn().mockResolvedValue('integration-user'),
+    UnauthorizedError,
+  };
 });
 
 const tableName = process.env.TABLE_NAME as string;
@@ -52,7 +59,7 @@ const baseEvent = (
 const parseBody = <T>(responseBody: string | undefined): T =>
   JSON.parse(responseBody ?? '{}') as T;
 
-const hardcodedUserId = resolveUserId(baseEvent());
+const hardcodedUserId = 'integration-user';
 
 interface ProjectAttributes {
   userId: string;

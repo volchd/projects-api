@@ -12,6 +12,14 @@ vi.hoisted(() => {
   process.env.TABLE_NAME = 'ProjectsTable';
 });
 
+vi.mock('../src/auth', () => {
+  class UnauthorizedError extends Error {}
+  return {
+    resolveUserId: vi.fn(),
+    UnauthorizedError,
+  };
+});
+
 vi.mock('../src/dynamodb', () => {
   return {
     ddbDocClient: {
@@ -28,11 +36,13 @@ import { create, get, listByProject, remove, update } from '../src/tasks';
 import { ddbDocClient } from '../src/dynamodb';
 import { randomUUID } from 'node:crypto';
 import { DEFAULT_TASK_PRIORITY } from '../src/tasks.types';
+import { resolveUserId, UnauthorizedError } from '../src/auth';
 
 type MockSend = ReturnType<typeof vi.fn>;
 
 const sendMock = ddbDocClient.send as unknown as MockSend;
 const randomUUIDMock = randomUUID as unknown as ReturnType<typeof vi.fn>;
+const resolveUserIdMock = resolveUserId as unknown as ReturnType<typeof vi.fn<typeof resolveUserId>>;
 
 const baseEvent = (
   overrides: Partial<APIGatewayProxyEventV2> = {},
@@ -54,6 +64,8 @@ beforeEach(() => {
   sendMock.mockReset();
   randomUUIDMock.mockReset();
   randomUUIDMock.mockReturnValue('generated-task-id');
+  resolveUserIdMock.mockReset();
+  resolveUserIdMock.mockResolvedValue('demo-user');
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
 });
@@ -63,6 +75,23 @@ afterEach(() => {
 });
 
 describe('create', () => {
+  it('returns 401 when authorization fails', async () => {
+    resolveUserIdMock.mockRejectedValueOnce(new UnauthorizedError('Invalid token'));
+
+    const response = await create(
+      baseEvent({
+        pathParameters: { projectId: 'project-1' },
+        body: JSON.stringify({ name: 'Task' }),
+      }),
+    );
+
+    expect(response.statusCode).toBe(401);
+    expect(parseBody<{ message: string }>(response.body)).toEqual({
+      message: 'Unauthorized',
+    });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('requires projectId', async () => {
     const response = await create(baseEvent());
 
@@ -369,6 +398,22 @@ describe('create', () => {
 });
 
 describe('get', () => {
+  it('returns 401 when authorization fails', async () => {
+    resolveUserIdMock.mockRejectedValueOnce(new UnauthorizedError('Invalid token'));
+
+    const response = await get(
+      baseEvent({
+        pathParameters: { projectId: 'project-1', taskId: 'task-1' },
+      }),
+    );
+
+    expect(response.statusCode).toBe(401);
+    expect(parseBody<{ message: string }>(response.body)).toEqual({
+      message: 'Unauthorized',
+    });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it('requires both projectId and taskId', async () => {
     const missingProject = await get(baseEvent());
     expect(missingProject.statusCode).toBe(400);

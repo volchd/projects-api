@@ -24,6 +24,8 @@ provider:
   environment:
     TABLE_NAME: ${self:service}-${sls:stage}-Projects
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+    COGNITO_USER_POOL_ID: ${env:COGNITO_USER_POOL_ID, 'us-east-1_9SfZWZEAH'}
+    COGNITO_USER_POOL_CLIENT_ID: ${env:COGNITO_USER_POOL_CLIENT_ID, '5h87m4j2ab9lanjq9ks466sbj9'}
   iam:
     role:
       statements:

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from './hooks/useProjects';
 import { useTasks } from './hooks/useTasks';
 import { useTheme } from './hooks/useTheme';
+import { AuthGate } from './components/AuthGate';
 import { ProjectSidebar } from './components/ProjectSidebar';
 import { ProjectForm } from './components/ProjectForm';
 import { TaskBoard } from './components/TaskBoard';
@@ -13,13 +14,14 @@ import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
 import type { Project, Task, TaskPriority, TaskStatus, TaskView } from './types';
+import { useAuth } from './hooks/useAuth';
 
 type ProjectFormMode = 'create' | 'edit' | null;
 
 const UNKNOWN_ERROR = 'Unknown error';
 const EMPTY_STATUSES: TaskStatus[] = [];
 
-function App() {
+function ProjectsApp() {
   const {
     projects,
     isLoading: projectsLoading,
@@ -120,6 +122,17 @@ function App() {
   } = useTasks(selectedProjectId, activeStatuses);
 
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Failed to sign out', err);
+    }
+  }, [logout]);
+
+  const accountLabel = user?.email ?? user?.username ?? 'Account';
 
   const taskBeingEdited = useMemo(
     () =>
@@ -670,6 +683,8 @@ function App() {
           onOpenCommandPalette={handleOpenCommandPalette}
           theme={theme}
           onToggleTheme={toggleTheme}
+          userLabel={accountLabel}
+          onSignOut={handleSignOut}
         />
         <div className="flex-1 min-h-0 overflow-hidden">
           <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-none p-6 pt-0 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
@@ -899,5 +914,11 @@ function App() {
     </div>
   );
 }
+
+const App = () => (
+  <AuthGate>
+    <ProjectsApp />
+  </AuthGate>
+);
 
 export default App;

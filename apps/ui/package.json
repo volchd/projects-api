@@ -10,6 +10,8 @@
     "test": "vitest"
   },
   "dependencies": {
+    "amazon-cognito-identity-js": "^6.2.2",
+    "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

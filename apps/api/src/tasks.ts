@@ -11,7 +11,7 @@ import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda';
-import { resolveUserId } from './auth';
+import { resolveUserId, UnauthorizedError } from './auth';
 import { ddbDocClient } from './dynamodb';
 import {
   PROJECT_SORT_KEY,
@@ -42,6 +42,24 @@ const TABLE_NAME = (() => {
   }
   return value;
 })();
+
+type AuthResult =
+  | { ok: true; userId: string }
+  | { ok: false; response: APIGatewayProxyStructuredResultV2 };
+
+const authenticateRequest = async (
+  event: APIGatewayProxyEventV2,
+): Promise<AuthResult> => {
+  try {
+    const userId = await resolveUserId(event);
+    return { ok: true, userId };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return { ok: false, response: json(401, { message: 'Unauthorized' }) };
+    }
+    throw error;
+  }
+};
 
 const toStringOrNull = (value: unknown): string | null | undefined => {
   if (value == null) {
@@ -618,7 +636,11 @@ export const create = async (
       return json(400, { errors });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
     const projectContext = await loadProjectForUser(projectId, userId);
     if (!projectContext) {
       return json(404, { message: 'Project not found' });
@@ -699,7 +721,11 @@ export const get = async (
       return json(400, { message: 'taskId path parameter is required' });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
 
     const res = await ddbDocClient.send(
       new GetCommand({
@@ -733,7 +759,11 @@ export const listByProject = async (
       return json(400, { message: 'projectId path parameter is required' });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
     const projectContext = await loadProjectForUser(projectId, userId);
     if (!projectContext) {
       return json(404, { message: 'Project not found' });
@@ -783,7 +813,11 @@ export const update = async (
       return json(400, { errors });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
     const projectContext = await loadProjectForUser(projectId, userId);
     if (!projectContext) {
       return json(404, { message: 'Project not found' });
@@ -905,7 +939,11 @@ export const remove = async (
       return json(400, { message: 'taskId path parameter is required' });
     }
 
-    const userId = resolveUserId(event);
+    const auth = await authenticateRequest(event);
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const { userId } = auth;
 
     await ddbDocClient.send(
       new DeleteCommand({
