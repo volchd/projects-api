@@ -30,7 +30,8 @@ class LocalEnvPlugin {
       throw new Error('Cognito outputs not found; deploy may have failed');
     }
 
-    this.updateEnvFile({ poolId, clientId });
+    this.updateApiEnvFile({ poolId, clientId });
+    this.updateUiEnvFile({ poolId, clientId });
   }
 
   getStage() {
@@ -41,6 +42,16 @@ class LocalEnvPlugin {
       return this.provider.getStage();
     }
     return this.serverless.service.provider.stage || 'dev';
+  }
+
+  getRegion() {
+    if (this.options && this.options.region) {
+      return this.options.region;
+    }
+    if (this.provider && typeof this.provider.getRegion === 'function') {
+      return this.provider.getRegion();
+    }
+    return this.serverless.service.provider.region || 'us-east-1';
   }
 
   getServiceName() {
@@ -67,11 +78,48 @@ class LocalEnvPlugin {
     return match && match.OutputValue;
   }
 
-  updateEnvFile({ poolId, clientId }) {
-    const serviceDir = this.serverless.config.servicePath || this.serverless.serviceDir;
+  updateApiEnvFile({ poolId, clientId }) {
+    const serviceDir = this.getServiceDir();
     const envPath = path.join(serviceDir, '.env.local');
     const templatePath = path.join(serviceDir, '.env.example');
+    this.writeEnvFile({
+      envPath,
+      templatePath,
+      values: {
+        COGNITO_USER_POOL_ID: poolId,
+        COGNITO_USER_POOL_CLIENT_ID: clientId,
+      },
+      logSuffix: 'Cognito IDs',
+    });
+  }
 
+  updateUiEnvFile({ poolId, clientId }) {
+    const serviceDir = this.getServiceDir();
+    const uiDir = path.resolve(serviceDir, '..', 'ui');
+    if (!fs.existsSync(uiDir) || !fs.statSync(uiDir).isDirectory()) {
+      this.serverless.cli.log(`[local-env] Skipping UI env update; ${uiDir} not found`);
+      return;
+    }
+
+    const envPath = path.join(uiDir, '.env.local');
+    const templatePath = path.join(uiDir, '.env.example');
+    this.writeEnvFile({
+      envPath,
+      templatePath,
+      values: {
+        VITE_COGNITO_REGION: this.getRegion(),
+        VITE_COGNITO_USER_POOL_ID: poolId,
+        VITE_COGNITO_USER_POOL_CLIENT_ID: clientId,
+      },
+      logSuffix: 'UI Cognito IDs',
+    });
+  }
+
+  getServiceDir() {
+    return this.serverless.config.servicePath || this.serverless.serviceDir;
+  }
+
+  writeEnvFile({ envPath, templatePath, values, logSuffix }) {
     let contents = '';
     if (fs.existsSync(envPath)) {
       contents = fs.readFileSync(envPath, 'utf8');
@@ -79,16 +127,20 @@ class LocalEnvPlugin {
       contents = fs.readFileSync(templatePath, 'utf8');
     }
 
-    contents = this.upsertEnv(contents, 'COGNITO_USER_POOL_ID', poolId);
-    contents = this.upsertEnv(contents, 'COGNITO_USER_POOL_CLIENT_ID', clientId);
+    contents = Object.entries(values).reduce(
+      (acc, [key, value]) => this.upsertEnv(acc, key, value),
+      contents,
+    );
 
     if (!contents.endsWith('\n')) {
       contents += '\n';
     }
 
     fs.writeFileSync(envPath, contents, 'utf8');
-    const relativePath = path.relative(serviceDir, envPath) || '.env.local';
-    this.serverless.cli.log(`[local-env] Updated ${relativePath} with Cognito IDs`);
+    const relativePath = path.relative(this.getServiceDir(), envPath) || path.basename(envPath);
+    this.serverless.cli.log(
+      `[local-env] Updated ${relativePath} with ${logSuffix || 'environment values'}`,
+    );
   }
 
   upsertEnv(source, key, value) {

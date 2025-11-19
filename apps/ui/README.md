@@ -18,7 +18,11 @@ npm run dev:api
 ```
 
 ## Environment
+Copy `.env.example` to `.env.local` (or `.env.production` before building for that environment) and update the variables:
 - `VITE_API_BASE` (optional): override the API base URL. Leave unset to rely on the dev proxy.
+- `VITE_COGNITO_REGION`: AWS region for your Cognito user pool (defaults to `us-east-1`).
+- `VITE_COGNITO_USER_POOL_ID`: Cognito user pool id that backs the UI.
+- `VITE_COGNITO_USER_POOL_CLIENT_ID`: Web client app id created inside the pool.
 
 ## Test & Build
 - Run UI unit tests:
@@ -56,4 +60,4 @@ npm run dev:api
    ```
 8. Automate the build, upload, and invalidation steps via CI/CD (GitHub Actions, CodeBuild, etc.) so pushes to main trigger deployments.
 
-Set `VITE_API_BASE` to the production API endpoint by creating an `.env.production` file (or injecting the variable in CI) before running the build if your API lives outside the CloudFront origin.
+Set `VITE_API_BASE` to the production API endpoint by creating an `.env.production` file (or injecting the variable in CI) before running the build if your API lives outside the CloudFront origin. Update `VITE_COGNITO_REGION`, `VITE_COGNITO_USER_POOL_ID`, and `VITE_COGNITO_USER_POOL_CLIENT_ID` in the same file so the deployed bundle targets the correct Cognito stack.

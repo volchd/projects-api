@@ -57,7 +57,7 @@ If you prefer to keep the API + DynamoDB entirely local while still using a host
 npm --workspace apps/api run deploy:local
 ```
 
-This deploys the `local-dev` stage, which only provisions the Cognito user pool + client. A lightweight Serverless plugin then writes the generated IDs back to `.env.local`, so your offline stack immediately picks up the correct `COGNITO_USER_POOL_ID` and `COGNITO_USER_POOL_CLIENT_ID`. Tear the stack down with `npm --workspace apps/api run remove:local` when you no longer need it. The regular `deploy`/`remove` scripts continue to manage the full stack for shared dev/qa/prod stages.
+This deploys the `local-dev` stage, which only provisions the Cognito user pool + client. A lightweight Serverless plugin then writes the generated IDs back to both `apps/api/.env.local` (for `COGNITO_USER_POOL_ID` / `COGNITO_USER_POOL_CLIENT_ID`) and `apps/ui/.env.local` (for the corresponding `VITE_COGNITO_*` variables), so your offline stack immediately picks up the correct configuration. Tear the stack down with `npm --workspace apps/api run remove:local` when you no longer need it. The regular `deploy`/`remove` scripts continue to manage the full stack for shared dev/qa/prod stages.
 
 ## Quick Start (Local)
 1) Install dependencies from the repository root (installs every workspace):
