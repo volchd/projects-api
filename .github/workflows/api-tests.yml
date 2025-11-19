@@ -28,6 +28,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Configure API environment
+        run: |
+          cat <<'EOF' > apps/api/.env.test
+          AWS_REGION=us-east-1
+          TABLE_NAME=projects-api-ci-Projects
+          COGNITO_USER_POOL_ID=${{ secrets.COGNITO_USER_POOL_ID || 'us-east-1_9SfZWZEAH' }}
+          COGNITO_USER_POOL_CLIENT_ID=${{ secrets.COGNITO_USER_POOL_CLIENT_ID || '5h87m4j2ab9lanjq9ks466sbj9' }}
+          EOF
+
       - name: Wait for DynamoDB Local
         run: npx wait-on tcp:8000 -t 30000
 

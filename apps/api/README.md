@@ -36,6 +36,24 @@ Task priority options: `None`, `Low`, `Normal`, `High`, `Urgent` (default is `No
 - Node.js 18+ (Node 20 recommended)
 - Docker
 
+## Environment configuration
+All handlers import `src/config/env.ts`, which loads `.env` files (in priority order) and exports a typed configuration object. Start by copying the tracked example file and filling in real values:
+```bash
+cp apps/api/.env.example apps/api/.env.local
+```
+
+When you deploy with the Serverless Framework, the same loader runs but simply reads the environment variables that Lambda receives from `serverless.yml`; `.env` files are only needed for local development and CI.
+
+The loader searches for `.env.<NODE_ENV>.local`, `.env.local`, `.env.<NODE_ENV>`, and `.env` (highest priority listed first). Keys defined in the shell/CI environment always win, so you can still `export` overrides when needed.
+
+- **Local dev** — keep a `.env.local` with developer-specific secrets (ignored by Git). Serverless offline and Vitest both read through the loader, so no extra tooling is required.
+- **GitHub Actions** — `.github/workflows/api-tests.yml` writes an `.env.test` file at runtime so the tests run with a consistent TABLE_NAME and Cognito IDs. Replace the placeholder values in that step with `${{ secrets.* }}` entries when you add real secrets to the repository/environment scope.
+- **AWS** — store production secrets in AWS Systems Manager Parameter Store (non-sensitive) and AWS Secrets Manager (credentials/tokens). A typical layout is `/projects-platform/api/<stage>/COGNITO_USER_POOL_ID`. Grant the deployment role permission to read those paths, fetch them during your CI/CD pipeline, and export them before invoking `serverless deploy`, e.g.:
+  ```bash
+  export $(aws ssm get-parameters-by-path --path /projects-platform/api/prod/ --with-decryption --query 'Parameters[*].{Name:Name,Value:Value}' --output text | tr '\t' '=')
+  ```
+  The values become regular environment variables, so both `serverless.yml` (for provider environment) and the runtime loader pick them up automatically. Lambda/Fargate/ECS tasks will then inherit the resolved values without bundling `.env` files.
+
 ## Quick Start (Local)
 1) Install dependencies from the repository root (installs every workspace):
 ```bash
