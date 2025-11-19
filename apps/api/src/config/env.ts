@@ -9,9 +9,9 @@ const nodeEnv = (process.env.NODE_ENV?.toLowerCase() as NodeEnv) ?? 'development
 
 const envFilesInPriorityOrder: Array<{ path: string; override: boolean }> = [
   { path: `.env.${nodeEnv}.local`, override: true },
-  { path: '.env.local', override: true },
+  ...(nodeEnv !== 'test' ? [{ path: '.env.local', override: true }] : []),
   { path: `.env.${nodeEnv}`, override: false },
-  { path: '.env', override: false },
+  ...(nodeEnv !== 'test' ? [{ path: '.env', override: false }] : []),
 ];
 
 const loadedFiles: string[] = [];

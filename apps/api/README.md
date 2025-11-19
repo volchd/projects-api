@@ -48,11 +48,7 @@ The loader searches for `.env.<NODE_ENV>.local`, `.env.local`, `.env.<NODE_ENV>`
 
 - **Local dev** — keep a `.env.local` with developer-specific secrets (ignored by Git). Serverless offline and Vitest both read through the loader, so no extra tooling is required.
 - **GitHub Actions** — `.github/workflows/api-tests.yml` writes an `.env.test` file at runtime so the tests run with a consistent TABLE_NAME and Cognito IDs. Replace the placeholder values in that step with `${{ secrets.* }}` entries when you add real secrets to the repository/environment scope.
-- **AWS** — store production secrets in AWS Systems Manager Parameter Store (non-sensitive) and AWS Secrets Manager (credentials/tokens). A typical layout is `/projects-platform/api/<stage>/COGNITO_USER_POOL_ID`. Grant the deployment role permission to read those paths, fetch them during your CI/CD pipeline, and export them before invoking `serverless deploy`, e.g.:
-  ```bash
-  export $(aws ssm get-parameters-by-path --path /projects-platform/api/prod/ --with-decryption --query 'Parameters[*].{Name:Name,Value:Value}' --output text | tr '\t' '=')
-  ```
-  The values become regular environment variables, so both `serverless.yml` (for provider environment) and the runtime loader pick them up automatically. Lambda/Fargate/ECS tasks will then inherit the resolved values without bundling `.env` files.
+- **AWS** — `serverless deploy` provisions the DynamoDB table plus a Cognito user pool and app client (see `resources` in `serverless.yml`). The generated IDs are injected into every Lambda via CloudFormation `Ref`, so you no longer have to pre-populate `COGNITO_USER_POOL_ID` or `COGNITO_USER_POOL_CLIENT_ID` when targeting AWS. Update the `CallbackURLs`/`LogoutURLs` entries in `serverless.yml` to match your UI origin(s). After the deploy finishes, run `serverless info --verbose` (or read the CloudFormation outputs) to grab the exported Cognito IDs for the web client. If you add additional secrets later on, keep them in SSM Parameter Store/Secrets Manager and export them before deployments as needed.
 
 ## Quick Start (Local)
 1) Install dependencies from the repository root (installs every workspace):
