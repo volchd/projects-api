@@ -1,5 +1,6 @@
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { env } from './config/env';
 
 export class UnauthorizedError extends Error {
   constructor(message = 'Unauthorized') {
@@ -9,17 +10,6 @@ export class UnauthorizedError extends Error {
 }
 
 type Claims = Record<string, unknown> | undefined;
-
-const DEFAULT_USER_POOL_ID = 'us-east-1_9SfZWZEAH';
-const DEFAULT_CLIENT_ID = '5h87m4j2ab9lanjq9ks466sbj9';
-
-const getEnv = (name: string, fallback?: string): string => {
-  const raw = (process.env[name] ?? fallback ?? '').trim();
-  if (!raw) {
-    throw new Error(`${name} environment variable is required`);
-  }
-  return raw;
-};
 
 const extractHeader = (
   headers: APIGatewayProxyEventV2['headers'],
@@ -76,12 +66,11 @@ let verifier: ReturnType<typeof CognitoJwtVerifier.create> | null = null;
 
 const getVerifier = () => {
   if (!verifier) {
-    const userPoolId = getEnv('COGNITO_USER_POOL_ID', DEFAULT_USER_POOL_ID);
-    const clientId = getEnv('COGNITO_USER_POOL_CLIENT_ID', DEFAULT_CLIENT_ID);
+    const { userPoolId, userPoolClientId } = env.cognito;
     verifier = CognitoJwtVerifier.create({
       userPoolId,
       tokenUse: 'id',
-      clientId,
+      clientId: userPoolClientId,
     });
   }
 

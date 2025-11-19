@@ -12,6 +12,7 @@ import type {
   APIGatewayProxyStructuredResultV2,
 } from 'aws-lambda';
 import { resolveUserId, UnauthorizedError } from './auth';
+import { env } from './config/env';
 import { ddbDocClient } from './dynamodb';
 import {
   GSI1_NAME,
@@ -36,13 +37,7 @@ import type {
 } from './projects.types';
 import { DEFAULT_PROJECT_STATUSES, MAX_PROJECT_STATUS_LENGTH } from './projects.types';
 
-const TABLE_NAME = (() => {
-  const value = process.env.TABLE_NAME;
-  if (!value) {
-    throw new Error('TABLE_NAME environment variable is required');
-  }
-  return value;
-})();
+const TABLE_NAME = env.tableName;
 
 type AuthResult =
   | { ok: true; userId: string }

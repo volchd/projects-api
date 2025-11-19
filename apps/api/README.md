@@ -36,6 +36,29 @@ Task priority options: `None`, `Low`, `Normal`, `High`, `Urgent` (default is `No
 - Node.js 18+ (Node 20 recommended)
 - Docker
 
+## Environment configuration
+All handlers import `src/config/env.ts`, which loads `.env` files (in priority order) and exports a typed configuration object. Start by copying the tracked example file and filling in real values:
+```bash
+cp apps/api/.env.example apps/api/.env.local
+```
+
+When you deploy with the Serverless Framework, the same loader runs but simply reads the environment variables that Lambda receives from `serverless.yml`; `.env` files are only needed for local development and CI.
+
+The loader searches for `.env.<NODE_ENV>.local`, `.env.local`, `.env.<NODE_ENV>`, and `.env` (highest priority listed first). Keys defined in the shell/CI environment always win, so you can still `export` overrides when needed.
+
+- **Local dev** — keep a `.env.local` with developer-specific secrets (ignored by Git). Serverless offline and Vitest both read through the loader, so no extra tooling is required.
+- **GitHub Actions** — `.github/workflows/api-tests.yml` writes an `.env.test` file at runtime so the tests run with a consistent TABLE_NAME and Cognito IDs. Replace the placeholder values in that step with `${{ secrets.* }}` entries when you add real secrets to the repository/environment scope.
+- **AWS** — `serverless deploy` provisions the DynamoDB table plus a Cognito user pool and app client (see `resources` in `serverless.yml`). The generated IDs are injected into every Lambda via CloudFormation `Ref`, so you no longer have to pre-populate `COGNITO_USER_POOL_ID` or `COGNITO_USER_POOL_CLIENT_ID` when targeting AWS. Update the `CallbackURLs`/`LogoutURLs` entries in `serverless.yml` to match your UI origin(s). After the deploy finishes, run `serverless info --verbose` (or read the CloudFormation outputs) to grab the exported Cognito IDs for the web client. If you add additional secrets later on, keep them in SSM Parameter Store/Secrets Manager and export them before deployments as needed.
+
+### Local-only Cognito bootstrap
+If you prefer to keep the API + DynamoDB entirely local while still using a hosted Cognito instance, run:
+
+```bash
+npm --workspace apps/api run deploy:local
+```
+
+This deploys the `local-dev` stage, which only provisions the Cognito user pool + client. A lightweight Serverless plugin then writes the generated IDs back to both `apps/api/.env.local` (for `COGNITO_USER_POOL_ID` / `COGNITO_USER_POOL_CLIENT_ID`) and `apps/ui/.env.local` (for the corresponding `VITE_COGNITO_*` variables), so your offline stack immediately picks up the correct configuration. Tear the stack down with `npm --workspace apps/api run remove:local` when you no longer need it. The regular `deploy`/`remove` scripts continue to manage the full stack for shared dev/qa/prod stages.
+
 ## Quick Start (Local)
 1) Install dependencies from the repository root (installs every workspace):
 ```bash

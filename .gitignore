@@ -11,3 +11,11 @@ dist/
 apps/ui/.vite
 apps/ui/tsconfig.tsbuildinfo
 .tmp/
+.env
+.env.*
+!.env.example
+!apps/api/.env.example
+apps/api/.env.local
+apps/api/.env.*.local
+apps/api/.env.ci
+apps/ui/.env copy.local

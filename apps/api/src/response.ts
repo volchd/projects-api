@@ -1,19 +1,9 @@
 import type { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
+import { env } from './config/env';
 
-const allowedOrigin =
-  process.env.CORS_ALLOWED_ORIGIN && process.env.CORS_ALLOWED_ORIGIN.trim().length
-    ? process.env.CORS_ALLOWED_ORIGIN.trim()
-    : '*';
-
-const allowedHeaders =
-  process.env.CORS_ALLOWED_HEADERS && process.env.CORS_ALLOWED_HEADERS.trim().length
-    ? process.env.CORS_ALLOWED_HEADERS.trim()
-    : 'Content-Type,Authorization';
-
-const allowedMethods =
-  process.env.CORS_ALLOWED_METHODS && process.env.CORS_ALLOWED_METHODS.trim().length
-    ? process.env.CORS_ALLOWED_METHODS.trim()
-    : 'OPTIONS,GET,POST,PUT,DELETE';
+const allowedOrigin = env.cors.allowedOrigin;
+const allowedHeaders = env.cors.allowedHeaders;
+const allowedMethods = env.cors.allowedMethods;
 
 export function json(statusCode: 204): APIGatewayProxyStructuredResultV2;
 export function json<T>(statusCode: number, body: T): APIGatewayProxyStructuredResultV2;
