@@ -902,6 +902,8 @@ function ProjectsApp() {
               dueDate: taskBeingEdited.dueDate,
               labels: taskBeingEdited.labels,
             }}
+            createdBy={taskBeingEdited.createdBy}
+            assigneeId={taskBeingEdited.assigneeId}
             isSubmitting={
               taskEditModalSubmitting || updatingTaskId === taskBeingEdited.taskId
             }

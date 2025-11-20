@@ -4,6 +4,7 @@ import type { TaskLabel, TaskPriority, TaskStatus } from '../types';
 import { TASK_PRIORITY_VALUES, toPriorityOptions } from '../constants/taskPriorityOptions';
 import { Select } from './Select';
 import { DatePicker } from './DatePicker';
+import { useAuth } from '../hooks/useAuth';
 
 const EMPTY_DESCRIPTION = '';
 const DEFAULT_PRIORITY: TaskPriority = 'None';
@@ -14,6 +15,39 @@ const toDateInputValue = (value: string | null | undefined): string => {
     return '';
   }
   return value.slice(0, 10);
+};
+
+const AVATAR_GRADIENTS = [
+  'from-indigo-500 to-sky-500',
+  'from-emerald-500 to-teal-400',
+  'from-amber-500 to-orange-500',
+  'from-rose-500 to-pink-500',
+  'from-slate-700 to-slate-900',
+  'from-cyan-500 to-blue-600',
+] as const;
+
+const initialsFromLabel = (value: string): string => {
+  if (!value.trim()) {
+    return '??';
+  }
+  const parts = value
+    .trim()
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((segment) => segment.charAt(0).toUpperCase());
+
+  if (parts.length === 0) {
+    return value.slice(0, 2).toUpperCase();
+  }
+
+  return parts.join('');
+};
+
+const gradientForValue = (value: string) => {
+  const hash = Array.from(value).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = Math.abs(hash) % AVATAR_GRADIENTS.length;
+  return AVATAR_GRADIENTS[index];
 };
 
 type TaskEditorFormState = {
@@ -36,6 +70,13 @@ type TaskEditorSubmitValues = {
   labels: TaskLabel[];
 };
 
+type UserIdentity = {
+  userId: string;
+  displayName: string;
+  secondaryLabel?: string;
+  isCurrentUser: boolean;
+};
+
 type StatusOption = {
   key: TaskStatus;
   label: string;
@@ -54,6 +95,8 @@ type TaskEditorProps = {
     dueDate: string | null;
     labels: TaskLabel[];
   };
+  createdBy?: string;
+  assigneeId?: string;
   isSubmitting: boolean;
   isDeleting?: boolean;
   error?: string | null;
@@ -62,12 +105,57 @@ type TaskEditorProps = {
   onDelete?: () => Promise<void> | void;
 };
 
+const UserIdentityBadge = ({
+  title,
+  identity,
+}: {
+  title: string;
+  identity: UserIdentity;
+}) => {
+  const avatarKey = identity.userId || identity.displayName || 'unknown';
+  const avatarGradient = gradientForValue(avatarKey);
+  const initials = initialsFromLabel(identity.displayName || 'Unknown');
+
+  return (
+    <div
+      className={clsx(
+        'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-soft dark:border-white/10 dark:bg-white/5 dark:shadow-card',
+        identity.isCurrentUser && 'ring-1 ring-indigo-300/60 dark:ring-indigo-500/30',
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className={clsx(
+          'flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-sm font-semibold uppercase text-white shadow-sm ring-1 ring-white/60 dark:ring-white/15',
+          avatarGradient,
+        )}
+      >
+        {initials}
+      </div>
+      <div className="leading-tight">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
+          {title}
+        </p>
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+          {identity.displayName}
+          {identity.isCurrentUser ? ' (You)' : ''}
+        </p>
+        {identity.secondaryLabel ? (
+          <p className="text-[11px] text-slate-500 dark:text-white/60">{identity.secondaryLabel}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 export const TaskEditor = ({
   mode,
   status,
   statuses,
   availableLabels,
   initialValues,
+  createdBy,
+  assigneeId,
   isSubmitting,
   isDeleting,
   error,
@@ -75,6 +163,16 @@ export const TaskEditor = ({
   onCancel,
   onDelete,
 }: TaskEditorProps) => {
+  const { user: authUser } = useAuth();
+  const currentUserId = authUser?.username?.trim();
+  const currentUserLabel =
+    (authUser?.firstName || authUser?.lastName
+      ? [authUser?.firstName, authUser?.lastName].filter(Boolean).join(' ')
+      : undefined) ??
+    authUser?.email ??
+    authUser?.username ??
+    'You';
+
   const [values, setValues] = useState<TaskEditorFormState>({
     name: initialValues?.name ?? '',
     description: initialValues?.description ?? EMPTY_DESCRIPTION,
@@ -131,6 +229,29 @@ export const TaskEditor = ({
   const priorityOptions = useMemo(() => toPriorityOptions(TASK_PRIORITY_VALUES), []);
   const showPrioritySelector = mode === 'edit';
   const showLabelSelector = mode === 'edit';
+  const createdByIdentity = useMemo<UserIdentity>(() => {
+    const normalized = createdBy?.trim();
+    if (!normalized) {
+      return { userId: 'unknown', displayName: 'Unknown user', isCurrentUser: false };
+    }
+    const isCurrentUser = Boolean(currentUserId) && normalized === currentUserId;
+    const displayName = isCurrentUser ? currentUserLabel : normalized;
+    const secondaryLabel =
+      isCurrentUser && displayName !== normalized ? normalized : undefined;
+    return { userId: normalized, displayName, secondaryLabel, isCurrentUser };
+  }, [createdBy, currentUserId, currentUserLabel]);
+
+  const assigneeIdentity = useMemo<UserIdentity>(() => {
+    const normalized = (assigneeId ?? createdBy)?.trim();
+    if (!normalized) {
+      return { userId: 'unknown', displayName: 'Unassigned', isCurrentUser: false };
+    }
+    const isCurrentUser = Boolean(currentUserId) && normalized === currentUserId;
+    const displayName = isCurrentUser ? currentUserLabel : normalized;
+    const secondaryLabel =
+      isCurrentUser && displayName !== normalized ? normalized : undefined;
+    return { userId: normalized, displayName, secondaryLabel, isCurrentUser };
+  }, [assigneeId, createdBy, currentUserId, currentUserLabel]);
 
   const sortLabels = (labels: TaskLabel[]) =>
     [...labels].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
@@ -276,6 +397,22 @@ export const TaskEditor = ({
           className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-0 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/40 dark:focus:bg-transparent"
         />
       </div>
+      {mode === 'edit' ? (
+        <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-r from-white via-white to-slate-50 p-4 shadow-soft dark:border-white/10 dark:bg-gradient-to-r dark:from-white/5 dark:via-white/0 dark:to-white/0 dark:shadow-card">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-white/60">
+              People
+            </span>
+            <span className="rounded-xl bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm dark:bg-white/20 dark:text-white">
+              Ownership
+            </span>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <UserIdentityBadge title="Created by" identity={createdByIdentity} />
+            <UserIdentityBadge title="Assigned to" identity={assigneeIdentity} />
+          </div>
+        </div>
+      ) : null}
       {shouldRenderGrid ? (
         <div className="grid gap-6 lg:grid-cols-2">
           {hasPrimaryExtras ? (
