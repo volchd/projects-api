@@ -182,6 +182,8 @@ describe('create', () => {
       startDate: null,
       dueDate: null,
       labels: [],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -206,6 +208,8 @@ describe('create', () => {
       startDate: null,
       dueDate: null,
       labels: [],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -478,6 +482,8 @@ describe('get', () => {
       startDate: null,
       dueDate: null,
       labels: [],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });
@@ -537,11 +543,13 @@ describe('listByProject', () => {
             name: 'Task A',
             description: null,
             status: 'TODO',
-            labels: ['Docs'],
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-          },
-          {
+      labels: ['Docs'],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    },
+    {
             PK: 'PROJECT#project-1',
             SK: 'TASK#task-2',
             projectId: 'project-1',
@@ -550,12 +558,14 @@ describe('listByProject', () => {
             name: 'Task B',
             description: 'details',
             status: 'TODO',
-            labels: [],
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-          },
-        ],
-      });
+      labels: [],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    },
+  ],
+});
 
     const response = await listByProject(
       baseEvent({
@@ -576,6 +586,8 @@ describe('listByProject', () => {
           startDate: null,
           dueDate: null,
           labels: ['Docs'],
+          createdBy: 'demo-user',
+          assigneeId: 'demo-user',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -589,6 +601,8 @@ describe('listByProject', () => {
           startDate: null,
           dueDate: null,
           labels: [],
+          createdBy: 'demo-user',
+          assigneeId: 'demo-user',
           createdAt: '2024-01-01T00:00:00.000Z',
           updatedAt: '2024-01-01T00:00:00.000Z',
         },
@@ -753,6 +767,8 @@ describe('update', () => {
       startDate: null,
       dueDate: null,
       labels: [],
+      createdBy: 'demo-user',
+      assigneeId: 'demo-user',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
     });

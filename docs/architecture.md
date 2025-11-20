@@ -42,7 +42,7 @@ Browser ↔ UI (Vite dev server or CloudFront) ↔ API Gateway ↔ Lambda handle
 | Entity  | Fields (subset) | Notes |
 | --- | --- | --- |
 | Project | `id`, `userId`, `name`, `description`, `statuses[]`, `labels[]`, timestamps | `statuses` and `labels` are normalized (deduped, trimmed, capped length 40). |
-| Task | `projectId`, `taskId`, `name`, `description`, `status`, `priority`, `startDate`, `dueDate`, `labels[]`, timestamps | `status` must match the parent project statuses. Priority ∈ {`None`,`Low`,`Normal`,`High`,`Urgent`}. |
+| Task | `projectId`, `taskId`, `name`, `description`, `status`, `priority`, `startDate`, `dueDate`, `labels[]`, `createdBy`, `assigneeId`, timestamps | `status` must match the parent project statuses. Priority ∈ {`None`,`Low`,`Normal`,`High`,`Urgent`}. `createdBy`/`assigneeId` default to the authenticated user when a task is created. |
 | User profile | `userId`, `email`, `firstName`, `lastName`, timestamps | Stored at `PK=USER#<userId>, SK=PROFILE`. Populated from Cognito claims on first login. |
 
 All entities (projects, tasks, user profiles) live in the same DynamoDB table to keep cross-entity transactions simple. Tasks inherit partition keys from their projects so deleting a project can efficiently delete its tasks via `Query` + batched `Delete` operations.

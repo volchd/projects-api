@@ -60,8 +60,8 @@ Both Projects and Tasks live in the same table:
 - `createProject` generates UUIDs server-side, writes the record with a conditional expression so duplicate PKs fail fast, and returns the normalized project payload.
 - `updateProject` builds a dynamic `UpdateExpression` only from provided fields and refuses empty payloads.
 - `deleteProject` first deletes every task belonging to the project (paging through DynamoDB results) before deleting the project so no orphaned tasks remain.
-- `createTask` ensures the requested status exists in the parent project's configured status list. When new labels are sent for a task, the handler persists them back to the project via `ensureProjectLabels` so UI filters stay in sync.
-- `updateTask` enforces user ownership and only updates provided fields. When labels change, it also updates the parent project's label list to include any newly seen labels.
+- `createTask` ensures the requested status exists in the parent project's configured status list. It also stamps `createdBy`/`assigneeId` to the authenticated user so new tasks start assigned to their creator. When new labels are sent for a task, the handler persists them back to the project via `ensureProjectLabels` so UI filters stay in sync.
+- `updateTask` enforces user ownership and only updates provided fields. When labels change, it also updates the parent project's label list to include any newly seen labels. Missing `createdBy`/`assigneeId` fields on legacy tasks are backfilled to the current user during updates.
 - `listTasksByProject` and `getTask` simply query within the project's partition; pagination can be added later via `LastEvaluatedKey`.
 
 ## Error Handling & Logging

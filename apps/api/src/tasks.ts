@@ -584,6 +584,21 @@ const toTaskLabels = (value: unknown): TaskLabel[] => {
   return labels;
 };
 
+const toUserId = (value: unknown, fallback: string): string => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  return fallback;
+};
+
+const coerceUserId = (value: unknown): string => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  const coerced = String(value ?? 'unknown');
+  return coerced.trim() ? coerced : 'unknown';
+};
+
 /**
  * Converts a raw DynamoDB item back into the public Task contract,
  * coercing undefined/legacy data into safe defaults.
@@ -597,6 +612,10 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     return undefined;
   }
 
+  const ownerId = coerceUserId(item.userId);
+  const createdBy = toUserId(item.createdBy, ownerId);
+  const assigneeId = toUserId(item.assigneeId, createdBy);
+
   return {
     projectId: String(item.projectId),
     taskId: String(item.taskId),
@@ -607,6 +626,8 @@ const toTask = (item: Record<string, unknown> | undefined): Task | undefined => 
     startDate: toDateValue(item.startDate),
     dueDate: toDateValue(item.dueDate),
     labels: toTaskLabels(item.labels),
+    createdBy,
+    assigneeId,
     createdAt: String(item.createdAt),
     updatedAt: String(item.updatedAt),
   };
@@ -672,6 +693,8 @@ export const create = async (
       startDate,
       dueDate,
       labels,
+      createdBy: userId,
+      assigneeId: userId,
       createdAt: now,
       updatedAt: now,
       entityType: TASK_ENTITY_TYPE,
@@ -888,6 +911,14 @@ export const update = async (
     if (names.length === 0) {
       return json(400, { message: 'Nothing to update' });
     }
+
+    names.push('#cb = if_not_exists(createdBy, :createdBy)');
+    exprNames['#cb'] = 'createdBy';
+    exprValues[':createdBy'] = userId;
+
+    names.push('#a = if_not_exists(assigneeId, :assigneeId)');
+    exprNames['#a'] = 'assigneeId';
+    exprValues[':assigneeId'] = userId;
 
     names.push('#u = :updatedAt');
     exprNames['#u'] = 'updatedAt';

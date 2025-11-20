@@ -141,6 +141,8 @@ interface Task {
   startDate: string | null; // ISO timestamps or null
   dueDate: string | null;
   labels: string[];
+  createdBy: string;        // user id that created the task
+  assigneeId: string;       // defaults to the creator
   createdAt: string;
   updatedAt: string;
 }
@@ -168,6 +170,7 @@ Rules:
 - `priority` optional; defaults to `None`.
 - `startDate`/`dueDate` accept ISO 8601 strings or `null`. When both provided, `dueDate` must be on/after `startDate`.
 - `labels` optional array; new labels are appended back to the project's label list so filters stay aware of them.
+- `createdBy` and `assigneeId` are set automatically from the authenticated user; clients do not pass these fields.
 
 Responses:
 - `201` with `Task` JSON.

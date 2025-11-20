@@ -29,6 +29,8 @@ export interface Task extends TaskKey {
   startDate: string | null;
   dueDate: string | null;
   labels: TaskLabel[];
+  createdBy: string;
+  assigneeId: string;
   createdAt: string;
   updatedAt: string;
 }
