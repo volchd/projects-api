@@ -12,6 +12,7 @@ import { Topbar } from './components/Topbar';
 import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/Modal';
 import { TaskEditor } from './components/TaskEditor';
+import { ProfileModal } from './components/ProfileModal';
 import { DEFAULT_TASK_STATUSES, toStatusOptions } from './constants/taskStatusOptions';
 import type { Project, Task, TaskPriority, TaskStatus, TaskView } from './types';
 import { useAuth } from './hooks/useAuth';
@@ -44,6 +45,7 @@ function ProjectsApp() {
   const [taskView, setTaskView] = useState<TaskView>('board');
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isTaskModalOpen, setTaskModalOpen] = useState(false);
+  const [isProfileOpen, setProfileOpen] = useState(false);
   const [taskModalSubmitting, setTaskModalSubmitting] = useState(false);
   const [taskModalError, setTaskModalError] = useState<string | null>(null);
   const [taskEditModalId, setTaskEditModalId] = useState<string | null>(null);
@@ -132,7 +134,13 @@ function ProjectsApp() {
     }
   }, [logout]);
 
-  const accountLabel = user?.email ?? user?.username ?? 'Account';
+  const accountLabel =
+    (user?.firstName || user?.lastName
+      ? [user?.firstName, user?.lastName].filter(Boolean).join(' ')
+      : undefined) ??
+    user?.email ??
+    user?.username ??
+    'Account';
 
   const taskBeingEdited = useMemo(
     () =>
@@ -685,6 +693,7 @@ function ProjectsApp() {
           onToggleTheme={toggleTheme}
           userLabel={accountLabel}
           onSignOut={handleSignOut}
+          onOpenProfile={() => setProfileOpen(true)}
         />
         <div className="flex-1 min-h-0 overflow-hidden">
           <section className="glass-panel flex h-full min-h-0 flex-col gap-6 overflow-hidden rounded-none p-6 pt-0 shadow-none ring-1 ring-slate-100 dark:shadow-none dark:ring-white/10">
@@ -768,6 +777,14 @@ function ProjectsApp() {
         </section>
         </div>
       </div>
+
+      <ProfileModal
+        open={isProfileOpen}
+        onClose={() => setProfileOpen(false)}
+        email={user?.email ?? null}
+        suggestedFirstName={user?.firstName}
+        suggestedLastName={user?.lastName}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDeleteTask)}

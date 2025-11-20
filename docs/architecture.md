@@ -13,7 +13,7 @@ The goal of the platform is to let a user create projects, define custom status 
 1. A browser (or another HTTP client) calls the UI or the API gateway URL.
 2. The UI uses the hooks under `apps/ui/src/hooks` to call the backend through `fetch` helpers located in `apps/ui/src/api`.
 3. API Gateway forwards the request to the appropriate Lambda handler declared in `apps/api/serverless.yml`.
-4. Handlers in `apps/api/src/projects.ts` and `apps/api/src/tasks.ts` validate payloads, resolve the authenticated user (currently hard-coded to `demo-user`), and perform the DynamoDB operation through the shared `ddbDocClient` instance (`apps/api/src/dynamodb.ts`).
+4. Handlers in `apps/api/src/projects.ts` and `apps/api/src/tasks.ts` validate payloads, resolve the authenticated user from the Cognito ID token, and perform the DynamoDB operation through the shared `ddbDocClient` instance (`apps/api/src/dynamodb.ts`).
 5. DynamoDB stores both Projects and Tasks in a single table. Projects live at `PK=PROJECT#<projectId>, SK=PROJECT`, tasks at `PK=PROJECT#<projectId>, SK=TASK#<taskId>`. A global secondary index (`GSI1`) lets us list projects per user.
 6. The API responds with JSON via the helper in `apps/api/src/response.ts`. The UI normalizes the payloads into React state and re-renders.
 
@@ -43,8 +43,9 @@ Browser ↔ UI (Vite dev server or CloudFront) ↔ API Gateway ↔ Lambda handle
 | --- | --- | --- |
 | Project | `id`, `userId`, `name`, `description`, `statuses[]`, `labels[]`, timestamps | `statuses` and `labels` are normalized (deduped, trimmed, capped length 40). |
 | Task | `projectId`, `taskId`, `name`, `description`, `status`, `priority`, `startDate`, `dueDate`, `labels[]`, timestamps | `status` must match the parent project statuses. Priority ∈ {`None`,`Low`,`Normal`,`High`,`Urgent`}. |
+| User profile | `userId`, `email`, `firstName`, `lastName`, timestamps | Stored at `PK=USER#<userId>, SK=PROFILE`. Populated from Cognito claims on first login. |
 
-Both entities are stored in the same DynamoDB table to keep cross-entity transactions simple. Tasks inherit partition keys from their projects so deleting a project can efficiently delete its tasks via `Query` + batched `Delete` operations.
+All entities (projects, tasks, user profiles) live in the same DynamoDB table to keep cross-entity transactions simple. Tasks inherit partition keys from their projects so deleting a project can efficiently delete its tasks via `Query` + batched `Delete` operations.
 
 ## Environments & Configuration
 

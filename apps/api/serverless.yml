@@ -99,6 +99,20 @@ custom:
               method: DELETE
               path: /projects/{id}
 
+      getUserProfile:
+        handler: src/users.getProfile
+        events:
+          - httpApi:
+              method: GET
+              path: /me/profile
+
+      putUserProfile:
+        handler: src/users.putProfile
+        events:
+          - httpApi:
+              method: PUT
+              path: /me/profile
+
       createTask:
         handler: src/tasks.create
         events:

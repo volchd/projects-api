@@ -6,10 +6,13 @@ type Mode = 'login' | 'register' | 'confirm';
 
 const INITIAL_FORM = {
   email: '',
+  firstName: '',
+  lastName: '',
   password: '',
   confirmPassword: '',
   code: '',
 };
+const NAME_MAX_LENGTH = 100;
 
 export const AuthScreen = () => {
   const { login, register, confirmRegistration, resendConfirmationCode } = useAuth();
@@ -52,6 +55,22 @@ export const AuthScreen = () => {
       return;
     }
 
+    const trimmedFirstName = form.firstName.trim();
+    const trimmedLastName = form.lastName.trim();
+
+    if (mode === 'register' && (!trimmedFirstName || !trimmedLastName)) {
+      setError('First and last name are required.');
+      return;
+    }
+
+    if (
+      mode === 'register' &&
+      (trimmedFirstName.length > NAME_MAX_LENGTH || trimmedLastName.length > NAME_MAX_LENGTH)
+    ) {
+      setError(`First and last name must be ${NAME_MAX_LENGTH} characters or fewer.`);
+      return;
+    }
+
     if (mode !== 'confirm' && !form.password) {
       setError('Email and password are required.');
       return;
@@ -72,7 +91,7 @@ export const AuthScreen = () => {
       if (mode === 'login') {
         await login(form.email, form.password);
       } else if (mode === 'register') {
-        await register(form.email, form.password);
+        await register(form.email, form.password, trimmedFirstName, trimmedLastName);
         setStatusMessage('Account created. Enter the verification code we emailed to you.');
         resetForMode('confirm', { preserveEmail: true, preserveFeedback: true });
       } else {
@@ -145,6 +164,42 @@ export const AuthScreen = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          {mode === 'register' ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-slate-600 dark:text-slate-200">
+                  First name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  value={form.firstName}
+                  onChange={handleInputChange}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-inner transition focus:border-slate-400 focus:outline-none focus:ring-0 dark:border-white/10 dark:bg-white/10 dark:text-white"
+                  placeholder="Ada"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-slate-600 dark:text-slate-200">
+                  Last name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  value={form.lastName}
+                  onChange={handleInputChange}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-inner transition focus:border-slate-400 focus:outline-none focus:ring-0 dark:border-white/10 dark:bg-white/10 dark:text-white"
+                  placeholder="Lovelace"
+                  required
+                />
+              </div>
+            </div>
+          ) : null}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-600 dark:text-slate-200">
               Email

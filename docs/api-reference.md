@@ -17,7 +17,47 @@ All endpoints return JSON and include permissive CORS headers by default (config
 
 ## Authentication
 
-`resolveUserId` currently returns a hard-coded `demo-user`. Swap this implementation to integrate with Cognito, Auth0, etc., and ensure the UI attaches whatever credentials the resolver expects. Until then, all requests are treated as belonging to the same demo user.
+Send a Cognito ID token via `Authorization: Bearer <token>`. The backend verifies the token against the configured user pool and derives the user id from the claims (`cognito:username` or `sub`). Requests without a valid bearer token return `401`.
+
+## User Profile
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/me/profile` | Fetch the current user's profile. |
+| `PUT` | `/me/profile` | Create or update the current user's profile. |
+
+### Profile Schema
+
+```ts
+interface UserProfile {
+  userId: string;
+  email: string | null;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### Upsert Profile
+
+Request body:
+
+```json
+{
+  "firstName": "Ada",
+  "lastName": "Lovelace"
+}
+```
+
+Rules:
+- `firstName` and `lastName` required, non-empty strings up to 100 characters.
+- Email is pulled from the authenticated token claims; clients do not need to send it.
+
+Responses:
+- `200` with the saved `UserProfile`.
+- `400` with `{ errors: [...] }` when validation fails.
+- `404` when fetching a profile that has not been created yet.
 
 ## Projects
 

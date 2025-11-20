@@ -8,6 +8,7 @@ type TopbarProps = {
   onToggleTheme: () => void;
   userLabel?: string;
   onSignOut?: () => void;
+  onOpenProfile?: () => void;
 };
 
 const initialsFromLabel = (value?: string) => {
@@ -73,6 +74,7 @@ export const Topbar = ({
   onToggleTheme,
   userLabel,
   onSignOut,
+  onOpenProfile,
 }: TopbarProps) => {
   const userInitials = initialsFromLabel(userLabel);
 
@@ -179,9 +181,14 @@ export const Topbar = ({
       </button>
       {onSignOut ? (
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white dark:bg-white/20 dark:text-slate-900">
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:bg-white/20 dark:text-slate-900"
+            aria-label="Open profile"
+          >
             {userInitials}
-          </div>
+          </button>
           <div className="min-w-[120px]">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-white/50">
               Signed in as

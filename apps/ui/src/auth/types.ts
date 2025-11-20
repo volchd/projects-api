@@ -6,5 +6,7 @@ export type AuthTokens = {
 export type AuthUser = {
   username: string;
   email?: string;
+  firstName?: string;
+  lastName?: string;
   tokens: AuthTokens;
 };

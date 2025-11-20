@@ -6,6 +6,7 @@ import {
   type CognitoUserSession,
 } from 'amazon-cognito-identity-js';
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { upsertUserProfile } from '../api/users';
 import { userPool } from './cognitoClient';
 import type { AuthUser } from './types';
 import { setAuthTokens } from './tokenStore';
@@ -14,7 +15,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   confirmRegistration: (email: string, code: string) => Promise<void>;
   resendConfirmationCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -24,11 +25,13 @@ export const AuthContext = createContext<AuthContextValue | undefined>(undefined
 
 const buildUserFromSession = (cognitoUser: CognitoUser, session: CognitoUserSession): AuthUser => {
   const idToken = session.getIdToken();
-  const payload = idToken.decodePayload() as { email?: string };
+  const payload = idToken.decodePayload() as { email?: string; given_name?: string; family_name?: string };
 
   return {
     username: cognitoUser.getUsername(),
     email: typeof payload.email === 'string' ? payload.email : undefined,
+    firstName: typeof payload.given_name === 'string' ? payload.given_name : undefined,
+    lastName: typeof payload.family_name === 'string' ? payload.family_name : undefined,
     tokens: {
       idToken: idToken.getJwtToken(),
       accessToken: session.getAccessToken().getJwtToken(),
@@ -84,6 +87,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [applyUser, readCurrentUser]);
 
+  useEffect(() => {
+    if (!user?.firstName || !user?.lastName) {
+      return;
+    }
+
+    const firstName = user.firstName;
+    const lastName = user.lastName;
+
+    const syncProfile = async () => {
+      try {
+        await upsertUserProfile({ firstName, lastName });
+      } catch (error) {
+        console.error('Failed to sync user profile', error);
+      }
+    };
+
+    void syncProfile();
+  }, [user]);
+
   const login = useCallback(
     (email: string, password: string) =>
       new Promise<void>((resolve, reject) => {
@@ -118,9 +140,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const register = useCallback(
-    (email: string, password: string) =>
+    (email: string, password: string, firstName: string, lastName: string) =>
       new Promise<void>((resolve, reject) => {
-        const attributes = [new CognitoUserAttribute({ Name: 'email', Value: email })];
+        const attributes = [
+          new CognitoUserAttribute({ Name: 'email', Value: email }),
+          new CognitoUserAttribute({ Name: 'given_name', Value: firstName }),
+          new CognitoUserAttribute({ Name: 'family_name', Value: lastName }),
+        ];
 
         userPool.signUp(email, password, attributes, [], (err?: Error | null) => {
           if (err) {

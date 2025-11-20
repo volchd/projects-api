@@ -10,6 +10,10 @@ export class UnauthorizedError extends Error {
 }
 
 type Claims = Record<string, unknown> | undefined;
+export type AuthenticatedUser = {
+  userId: string;
+  claims: Record<string, unknown>;
+};
 
 const extractHeader = (
   headers: APIGatewayProxyEventV2['headers'],
@@ -77,7 +81,7 @@ const getVerifier = () => {
   return verifier;
 };
 
-export const resolveUserId = async (event: APIGatewayProxyEventV2): Promise<string> => {
+const resolveClaims = async (event: APIGatewayProxyEventV2): Promise<Claims> => {
   const token = extractBearerToken(event.headers);
   if (!token) {
     throw new UnauthorizedError('Missing bearer token');
@@ -90,10 +94,24 @@ export const resolveUserId = async (event: APIGatewayProxyEventV2): Promise<stri
     throw new UnauthorizedError('Invalid or expired token');
   }
 
+  return claims;
+};
+
+export const resolveUser = async (event: APIGatewayProxyEventV2): Promise<AuthenticatedUser> => {
+  const claims = await resolveClaims(event);
+  if (!claims) {
+    throw new UnauthorizedError('Token is missing claims');
+  }
+
   const userId = userIdFromClaims(claims);
   if (!userId) {
     throw new UnauthorizedError('Token does not include a user identifier');
   }
 
+  return { userId, claims };
+};
+
+export const resolveUserId = async (event: APIGatewayProxyEventV2): Promise<string> => {
+  const { userId } = await resolveUser(event);
   return userId;
 };
