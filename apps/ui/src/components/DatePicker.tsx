@@ -203,7 +203,11 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
                       : 'text-slate-300 dark:text-white/30',
                     isSelected ? 'bg-indigo-600 text-white hover:bg-indigo-600' : 'hover:bg-transparent',
                   )}
-                  onClick={() => handleSelectDate(date)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleSelectDate(date);
+                  }}
                   disabled={disabled}
                 >
                   {date.getDate()}
@@ -215,14 +219,22 @@ export const DatePicker = ({ value, onChange, disabled = false, placeholder, ari
             <button
               type="button"
               className="text-rose-500 hover:text-rose-600"
-              onClick={handleClear}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleClear();
+              }}
             >
               Clear
             </button>
             <button
               type="button"
               className="text-indigo-600 hover:text-indigo-500"
-              onClick={handleToday}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleToday();
+              }}
             >
               Today
             </button>

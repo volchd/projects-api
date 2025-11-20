@@ -147,7 +147,11 @@ export const Select = <T extends string>({
                     isHighlighted && !isSelected && 'bg-slate-100 text-slate-900 dark:bg-white/10 dark:text-white',
                     !isSelected && !isHighlighted && 'text-slate-700 hover:bg-slate-100 dark:text-white/80 dark:hover:bg-white/10',
                   )}
-                  onClick={() => handleSelect(option)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleSelect(option);
+                  }}
                 >
                   <span className={option.className}>{option.label}</span>
                   {isSelected ? (
